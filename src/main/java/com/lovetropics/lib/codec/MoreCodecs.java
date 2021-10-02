@@ -1,14 +1,18 @@
 package com.lovetropics.lib.codec;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.datafixers.util.Either;
 import com.mojang.datafixers.util.Pair;
+import com.mojang.datafixers.util.Unit;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
+import com.mojang.serialization.Lifecycle;
+import com.mojang.serialization.RecordBuilder;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -231,6 +235,10 @@ public final class MoreCodecs {
         );
     }
 
+    public static <K, V> Codec<Map<K, V>> dispatchByMapKey(Codec<K> keyCodec, Function<K, Codec<V>> valueCodec) {
+        return new DispatchMapCodec<>(keyCodec, valueCodec);
+    }
+
     public static <T extends IForgeRegistryEntry<T>> Codec<T> ofForgeRegistry(Supplier<IForgeRegistry<T>> registry) {
         return new Codec<T>() {
             @Override
@@ -314,6 +322,57 @@ public final class MoreCodecs {
         public <T> DataResult<Pair<A, T>> decode(DynamicOps<T> ops, T input) {
             S sourceData = ops == this.sourceOps ? (S) input : ops.convertTo(this.sourceOps, input);
             return this.decode.apply(sourceData).map(output -> Pair.of(output, input));
+        }
+    }
+
+    static final class DispatchMapCodec<K, V> implements Codec<Map<K, V>> {
+        private final Codec<K> keyCodec;
+        private final Function<K, Codec<V>> valueCodec;
+
+        DispatchMapCodec(Codec<K> keyCodec, Function<K, Codec<V>> valueCodec) {
+            this.keyCodec = keyCodec;
+            this.valueCodec = valueCodec;
+        }
+
+        @Override
+        public <T> DataResult<Pair<Map<K, V>, T>> decode(DynamicOps<T> ops, T input) {
+            return ops.getMap(input).flatMap(mapInput -> {
+                ImmutableMap.Builder<K, V> read = ImmutableMap.builder();
+                ImmutableList.Builder<Pair<T, T>> failed = ImmutableList.builder();
+
+                DataResult<Unit> result = mapInput.entries().reduce(
+                        DataResult.success(Unit.INSTANCE, Lifecycle.stable()),
+                        (r, pair) -> this.keyCodec.parse(ops, pair.getFirst()).flatMap(key -> {
+                            DataResult<Pair<K, V>> entry = this.valueCodec.apply(key).parse(ops, pair.getSecond())
+                                    .map(value -> Pair.of(key, value));
+                            entry.error().ifPresent(e -> failed.add(pair));
+
+                            return r.apply2stable((u, p) -> {
+                                read.put(p.getFirst(), p.getSecond());
+                                return u;
+                            }, entry);
+                        }),
+                        (r1, r2) -> r1.apply2stable((u1, u2) -> u1, r2)
+                );
+
+                Map<K, V> elements = read.build();
+                T errors = ops.createMap(failed.build().stream());
+
+                return result.map(unit -> Pair.of(elements, input))
+                        .setPartial(Pair.of(elements, input))
+                        .mapError(e -> e + " missed input: " + errors);
+            });
+        }
+
+        @Override
+        public <T> DataResult<T> encode(Map<K, V> input, DynamicOps<T> ops, T prefix) {
+            RecordBuilder<T> map = ops.mapBuilder();
+            for (Map.Entry<K, V> entry : input.entrySet()) {
+                K key = entry.getKey();
+                V value = entry.getValue();
+                map.add(this.keyCodec.encodeStart(ops, key), this.valueCodec.apply(key).encodeStart(ops, value));
+            }
+            return map.build(prefix);
         }
     }
 }
