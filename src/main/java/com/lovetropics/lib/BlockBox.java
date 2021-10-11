@@ -129,21 +129,27 @@ public final class BlockBox implements Iterable<BlockPos> {
     }
 
     public boolean contains(double x, double y, double z) {
-		BlockPos min = this.min;
-		BlockPos max = this.max;
-		return x >= min.getX() && y >= min.getY() && z >= min.getZ()
-				&& x <= max.getX() && y <= max.getY() && z <= max.getZ();
+        BlockPos min = this.min;
+        BlockPos max = this.max;
+        return x >= min.getX() && y >= min.getY() && z >= min.getZ()
+                && x <= max.getX() && y <= max.getY() && z <= max.getZ();
     }
 
     public boolean contains(int x, int y, int z) {
-		BlockPos min = this.min;
-		BlockPos max = this.max;
-		return x >= min.getX() && y >= min.getY() && z >= min.getZ()
-				&& x <= max.getX() && y <= max.getY() && z <= max.getZ();
+        BlockPos min = this.min;
+        BlockPos max = this.max;
+        return x >= min.getX() && y >= min.getY() && z >= min.getZ()
+                && x <= max.getX() && y <= max.getY() && z <= max.getZ();
     }
 
     public boolean intersects(AxisAlignedBB aabb) {
         return aabb.intersects(this.min.getX(), this.min.getY(), this.min.getZ(), this.max.getX() + 1.0, this.max.getY() + 1.0, this.max.getZ() + 1.0);
+    }
+
+    public boolean intersects(BlockBox other) {
+        return this.max.getX() >= other.min.getX() && this.min.getX() <= other.max.getX()
+                && this.max.getY() >= other.min.getY() && this.min.getY() <= other.max.getY()
+                && this.max.getZ() >= other.min.getZ() && this.min.getZ() <= other.max.getZ();
     }
 
     @Nullable
