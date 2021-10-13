@@ -39,6 +39,7 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.util.text.Color;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameType;
 import net.minecraft.world.gen.blockstateprovider.BlockStateProvider;
 import net.minecraft.world.gen.blockstateprovider.SimpleBlockStateProvider;
@@ -134,6 +135,8 @@ public final class MoreCodecs {
                     VECTOR_3D.fieldOf("end").forGetter(aabb -> new Vector3d(aabb.maxX, aabb.maxY, aabb.maxZ))
             ).apply(instance, AxisAlignedBB::new)
     );
+
+    public static final Codec<Difficulty> DIFFICULTY = MoreCodecs.stringVariants(Difficulty.values(), Difficulty::getTranslationKey);
 
     public static <T> Codec<T[]> arrayOrUnit(Codec<T> codec, IntFunction<T[]> factory) {
         return listToArray(listOrUnit(codec), factory);
