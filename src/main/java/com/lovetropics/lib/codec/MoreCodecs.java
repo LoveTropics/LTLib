@@ -30,6 +30,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.NBTDynamicOps;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.potion.Potion;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -137,6 +139,29 @@ public final class MoreCodecs {
     );
 
     public static final Codec<Difficulty> DIFFICULTY = MoreCodecs.stringVariants(Difficulty.values(), Difficulty::getTranslationKey);
+
+    public static final Codec<Potion> POTION = Registry.POTION;
+
+    private static final Codec<EffectInstance> EFFECT_INSTANCE_RECORD = RecordCodecBuilder.create(instance -> {
+        return instance.group(
+                Registry.EFFECTS.fieldOf("type").forGetter(EffectInstance::getPotion),
+                Codec.FLOAT.fieldOf("seconds").forGetter(c -> c.getDuration() / 20.0F),
+                Codec.INT.fieldOf("amplifier").forGetter(EffectInstance::getAmplifier),
+                Codec.BOOL.optionalFieldOf("hide_particles", false).forGetter(c -> !c.doesShowParticles())
+        ).apply(instance, (type, seconds, amplifier, hideParticles) -> {
+            return new EffectInstance(type, Math.round(seconds * 20), amplifier, false, hideParticles);
+        });
+    });
+
+    public static final Codec<EffectInstance> EFFECT_INSTANCE = Codec.either(POTION, EFFECT_INSTANCE_RECORD)
+            .comapFlatMap(either -> either.map(potion -> {
+                List<EffectInstance> effects = potion.getEffects();
+                if (effects.size() == 1) {
+                    return DataResult.success(effects.get(0));
+                } else {
+                    return DataResult.error("Potion must have only 1 effect");
+                }
+            }, DataResult::success), Either::right);
 
     public static <T> Codec<T[]> arrayOrUnit(Codec<T> codec, IntFunction<T[]> factory) {
         return listToArray(listOrUnit(codec), factory);
