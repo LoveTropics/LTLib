@@ -81,12 +81,12 @@ public final class BackendWebSocketConnection extends SimpleChannelInboundHandle
 						.addLast(new HttpClientCodec())
 						.addLast(new HttpObjectAggregator(MAX_FRAME_SIZE))
 						.addLast(WebSocketClientCompressionHandler.INSTANCE)
-						.addLast(websocket);
+						.addLast(websocket)
+						.addLast(connection);
 			}
 		});
 
-		CompletableFuture<Channel> future = awaitFuture(bootstrap.connect(address.getHost(), address.getPort()))
-				.thenCompose(connect -> awaitFuture(websocket.handshaker().handshake(connect)));
+		CompletableFuture<Channel> future = awaitFuture(bootstrap.connect(address.getHost(), address.getPort()));
 
 		future.handle((connected, error) -> {
 			if (connected != null) {
