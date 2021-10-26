@@ -132,7 +132,7 @@ public final class BlockBox implements Iterable<BlockPos> {
         BlockPos min = this.min;
         BlockPos max = this.max;
         return x >= min.getX() && y >= min.getY() && z >= min.getZ()
-                && x <= max.getX() && y <= max.getY() && z <= max.getZ();
+                && x < max.getX() + 1.0 && y < max.getY() + 1.0 && z < max.getZ() + 1.0;
     }
 
     public boolean contains(int x, int y, int z) {
