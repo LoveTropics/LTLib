@@ -17,8 +17,8 @@ group = 'com.lovetropics.lib'
 archivesBaseName = 'LTLib'
 
 ext.buildnumber = 0
-project.buildnumber = System.getenv('BUILD_NUMBER') ?: 'custom'
-version = "${mod_version}-${release_type}+${buildnumber}"
+project.buildnumber = System.getenv('BUILD_NUMBER')
+version = "${mod_version}-" + (buildnumber ? "${release_type}+${buildnumber}" : "SNAPSHOT")
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
 
