@@ -1,5 +1,24 @@
 package com.lovetropics.lib.codec;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
@@ -12,8 +31,10 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.Lifecycle;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.RecordBuilder;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
@@ -47,23 +68,6 @@ import net.minecraft.world.gen.blockstateprovider.BlockStateProvider;
 import net.minecraft.world.gen.blockstateprovider.SimpleBlockStateProvider;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistryEntry;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 public final class MoreCodecs {
     public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, Registry.ITEM)
@@ -162,6 +166,13 @@ public final class MoreCodecs {
                     return DataResult.error("Potion must have only 1 effect");
                 }
             }, DataResult::success), Either::right);
+
+	public static <T> MapCodec<T> inputOptionalFieldOf(Codec<T> codec, String name, T fallback) {
+    	return Codec.optionalField(name, codec).xmap(
+            o -> o.orElse(fallback),
+            a -> Optional.of(a)
+        );
+    }
 
     public static <T> Codec<T[]> arrayOrUnit(Codec<T> codec, IntFunction<T[]> factory) {
         return listToArray(listOrUnit(codec), factory);
@@ -318,6 +329,10 @@ public final class MoreCodecs {
         );
     }
 
+    public static <T> Codec<T> tryFirst(Codec<T> first, Codec<T> second) {
+    	return new TryFirstCodec<>(first, second);
+    }
+
     private static <T> List<T> unitArrayList(T t) {
         List<T> list = new ArrayList<>(1);
         list.add(t);
@@ -401,6 +416,52 @@ public final class MoreCodecs {
                 map.add(this.keyCodec.encodeStart(ops, key), this.valueCodec.apply(key).encodeStart(ops, value));
             }
             return map.build(prefix);
+        }
+    }
+    
+    static final class TryFirstCodec<T> implements Codec<T> {
+        private final Codec<T> first;
+        private final Codec<T> second;
+
+        public TryFirstCodec(final Codec<T> first, final Codec<T> second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        @Override
+        public <R> DataResult<Pair<T, R>> decode(final DynamicOps<R> ops, final R input) {
+            final DataResult<Pair<T, R>> firstRead = first.decode(ops, input);
+            if (firstRead.result().isPresent()) {
+                return firstRead;
+            }
+            return second.decode(ops, input);
+        }
+
+        @Override
+        public <R> DataResult<R> encode(final T input, final DynamicOps<R> ops, final R prefix) {
+        	return second.encode(input, ops, prefix);
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            final TryFirstCodec<?> other = ((TryFirstCodec<?>) o);
+            return Objects.equals(first, other.first) && Objects.equals(second, other.second);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(first, second);
+        }
+
+        @Override
+        public String toString() {
+            return "TryFirstCodec[" + first + ", " + second + ']';
         }
     }
 }
