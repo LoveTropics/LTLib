@@ -33,6 +33,10 @@ public final class FireworkPalette {
 			new int[] { CE_YELLOW, CE_BLUE, CE_PURPLE },
 			new int[] { CE_BLUE, CE_GREEN, CE_NAVY }
 	);
+	public static final FireworkPalette OSA_CONSERVATION = new FireworkPalette(
+			new int[] { 0x89C521, 0xCA813D, 0x0090FF, 0x250E02 },
+			new int[] { 0x89C521, 0xCA813D, 0x0090FF, 0xFEFFEA }
+	);
 
 	public static final FireworkPalette ISLAND_ROYALE = new FireworkPalette(
 			new int[] { 0x000000 }
