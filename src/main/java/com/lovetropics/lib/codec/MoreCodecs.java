@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.PriorityQueue;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -264,11 +265,12 @@ public final class MoreCodecs {
         );
     }
 
-    public static <T, C extends List<T>> Codec<C> sorted(Codec<C> codec, Comparator<? super T> comparator) {
+    public static <T> Codec<List<T>> sorted(Codec<List<T>> codec, Comparator<? super T> comparator) {
         return codec.xmap(
                 list -> {
-                    list.sort(comparator);
-                    return list;
+                	List<T> ret = new ArrayList<>(list);
+                	ret.sort(comparator);
+                    return ret;
                 },
                 Function.identity()
         );
