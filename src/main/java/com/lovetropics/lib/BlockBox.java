@@ -15,21 +15,11 @@ import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Random;
 
-public final class BlockBox implements Iterable<BlockPos> {
-    public static final Codec<BlockBox> CODEC = RecordCodecBuilder.create(instance -> {
-        return instance.group(
-                BlockPos.CODEC.fieldOf("min").forGetter(c -> c.min),
-                BlockPos.CODEC.fieldOf("max").forGetter(c -> c.max)
-        ).apply(instance, BlockBox::of);
-    });
-
-    public final BlockPos min;
-    public final BlockPos max;
-
-    private BlockBox(BlockPos min, BlockPos max) {
-        this.min = min;
-        this.max = max;
-    }
+public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos> {
+    public static final Codec<BlockBox> CODEC = RecordCodecBuilder.create(i -> i.group(
+            BlockPos.CODEC.fieldOf("min").forGetter(c -> c.min),
+            BlockPos.CODEC.fieldOf("max").forGetter(c -> c.max)
+    ).apply(i, BlockBox::of));
 
     public static BlockBox of(BlockPos pos) {
         return new BlockBox(pos, pos);
@@ -81,7 +71,7 @@ public final class BlockBox implements Iterable<BlockPos> {
         );
     }
 
-    public Vec3 getCenter() {
+    public Vec3 center() {
         return new Vec3(
                 (this.min.getX() + this.max.getX() + 1.0) / 2.0,
                 (this.min.getY() + this.max.getY() + 1.0) / 2.0,
@@ -89,7 +79,7 @@ public final class BlockBox implements Iterable<BlockPos> {
         );
     }
 
-    public BlockPos getCenterBlock() {
+    public BlockPos centerBlock() {
         return new BlockPos(
                 (this.min.getX() + this.max.getX() + 1) / 2,
                 (this.min.getY() + this.max.getY() + 1) / 2,
@@ -97,7 +87,7 @@ public final class BlockBox implements Iterable<BlockPos> {
         );
     }
 
-    public BlockPos getSize() {
+    public BlockPos size() {
         return new BlockPos(
                 this.max.getX() - this.min.getX() + 1,
                 this.max.getY() - this.min.getY() + 1,
@@ -105,7 +95,7 @@ public final class BlockBox implements Iterable<BlockPos> {
         );
     }
 
-    public long getVolume() {
+    public long volume() {
         long sizeX = this.max.getX() - this.min.getX() + 1;
         long sizeY = this.max.getY() - this.min.getY() + 1;
         long sizeZ = this.max.getZ() - this.min.getZ() + 1;

@@ -139,10 +139,10 @@ public final class MoreCodecs {
                 }
             }, DataResult::success), Either::right);
 
-	public static <T> MapCodec<T> inputOptionalFieldOf(Codec<T> codec, String name, T fallback) {
-    	return Codec.optionalField(name, codec).xmap(
-            o -> o.orElse(fallback),
-            a -> Optional.of(a)
+    public static <T> MapCodec<T> inputOptionalFieldOf(Codec<T> codec, String name, T fallback) {
+        return Codec.optionalField(name, codec).xmap(
+                o -> o.orElse(fallback),
+                Optional::of
         );
     }
 
@@ -190,9 +190,9 @@ public final class MoreCodecs {
         return withNbt(
                 value -> encode.apply(value, new CompoundTag()),
                 nbt -> {
-                    if (nbt instanceof CompoundTag) {
+                    if (nbt instanceof CompoundTag compound) {
                         A value = factory.get();
-                        decode.accept(value, (CompoundTag) nbt);
+                        decode.accept(value, compound);
                         return DataResult.success(value);
                     }
                     return DataResult.error("Expected compound tag");
@@ -311,17 +311,7 @@ public final class MoreCodecs {
         return list;
     }
 
-    static final class MappedOpsCodec<A, S> implements Codec<A> {
-        private final DynamicOps<S> sourceOps;
-        private final Function<A, S> encode;
-        private final Function<S, DataResult<A>> decode;
-
-        MappedOpsCodec(DynamicOps<S> sourceOps, Function<A, S> encode, Function<S, DataResult<A>> decode) {
-            this.sourceOps = sourceOps;
-            this.encode = encode;
-            this.decode = decode;
-        }
-
+    record MappedOpsCodec<A, S>(DynamicOps<S> sourceOps, Function<A, S> encode, Function<S, DataResult<A>> decode) implements Codec<A> {
         @Override
         @SuppressWarnings("unchecked")
         public <T> DataResult<T> encode(A input, DynamicOps<T> ops, T prefix) {
@@ -340,15 +330,7 @@ public final class MoreCodecs {
         }
     }
 
-    static final class DispatchMapCodec<K, V> implements Codec<Map<K, V>> {
-        private final Codec<K> keyCodec;
-        private final Function<K, Codec<V>> valueCodec;
-
-        DispatchMapCodec(Codec<K> keyCodec, Function<K, Codec<V>> valueCodec) {
-            this.keyCodec = keyCodec;
-            this.valueCodec = valueCodec;
-        }
-
+    record DispatchMapCodec<K, V>(Codec<K> keyCodec, Function<K, Codec<V>> valueCodec) implements Codec<Map<K, V>> {
         @Override
         public <T> DataResult<Pair<Map<K, V>, T>> decode(DynamicOps<T> ops, T input) {
             return ops.getMap(input).flatMap(mapInput -> {
@@ -390,16 +372,8 @@ public final class MoreCodecs {
             return map.build(prefix);
         }
     }
-    
-    static final class TryFirstCodec<T> implements Codec<T> {
-        private final Codec<T> first;
-        private final Codec<T> second;
 
-        public TryFirstCodec(final Codec<T> first, final Codec<T> second) {
-            this.first = first;
-            this.second = second;
-        }
-
+    record TryFirstCodec<T>(Codec<T> first, Codec<T> second) implements Codec<T> {
         @Override
         public <R> DataResult<Pair<T, R>> decode(final DynamicOps<R> ops, final R input) {
             final DataResult<Pair<T, R>> firstRead = first.decode(ops, input);
@@ -411,29 +385,7 @@ public final class MoreCodecs {
 
         @Override
         public <R> DataResult<R> encode(final T input, final DynamicOps<R> ops, final R prefix) {
-        	return second.encode(input, ops, prefix);
-        }
-
-        @Override
-        public boolean equals(final Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            final TryFirstCodec<?> other = ((TryFirstCodec<?>) o);
-            return Objects.equals(first, other.first) && Objects.equals(second, other.second);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(first, second);
-        }
-
-        @Override
-        public String toString() {
-            return "TryFirstCodec[" + first + ", " + second + ']';
+            return second.encode(input, ops, prefix);
         }
     }
 }
