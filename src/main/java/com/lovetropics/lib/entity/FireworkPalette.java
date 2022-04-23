@@ -89,7 +89,7 @@ public final class FireworkPalette {
 		CompoundNBT fireworkTag = new CompoundNBT();
 		fireworkTag.put("Explosions", explosions);
 		fireworkTag.putByte("Flight", (byte) 1);
-		firework.setTagInfo("Fireworks", fireworkTag);
+		firework.addTagElement("Fireworks", fireworkTag);
 
 		return new FireworkRocketEntity(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, firework);
 	}
@@ -107,7 +107,7 @@ public final class FireworkPalette {
 			BlockState bs = world.getBlockState(spawnPos);
 
 			int tries = -1;
-			while (!world.isAirBlock(new BlockPos(spawnPos)) && !bs.getMaterial().blocksMovement()) {
+			while (!world.isEmptyBlock(new BlockPos(spawnPos)) && !bs.getMaterial().blocksMotion()) {
 				tries++;
 				if (tries > 100) {
 					return;
@@ -115,7 +115,7 @@ public final class FireworkPalette {
 			}
 		}
 
-		world.addEntity(this.create(world, spawnPos));
+		world.addFreshEntity(this.create(world, spawnPos));
 	}
 
 	private static double moveRandomly(double base, double range) {

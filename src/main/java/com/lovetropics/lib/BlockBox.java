@@ -76,8 +76,8 @@ public final class BlockBox implements Iterable<BlockPos> {
 
     public BlockBox offset(double x, double y, double z) {
         return new BlockBox(
-                this.min.add(x, y, z),
-                this.max.add(x, y, z)
+                this.min.offset(x, y, z),
+                this.max.offset(x, y, z)
         );
     }
 
@@ -171,7 +171,7 @@ public final class BlockBox implements Iterable<BlockPos> {
 
     @Override
     public Iterator<BlockPos> iterator() {
-        return BlockPos.getAllInBoxMutable(this.min, this.max).iterator();
+        return BlockPos.betweenClosed(this.min, this.max).iterator();
     }
 
     public LongSet asChunks() {

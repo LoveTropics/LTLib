@@ -1,24 +1,5 @@
 package com.lovetropics.lib.codec;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
@@ -26,22 +7,11 @@ import com.google.gson.JsonSyntaxException;
 import com.mojang.datafixers.util.Either;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.datafixers.util.Unit;
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
-import com.mojang.serialization.DynamicOps;
-import com.mojang.serialization.JsonOps;
-import com.mojang.serialization.Lifecycle;
-import com.mojang.serialization.MapCodec;
-import com.mojang.serialization.RecordBuilder;
+import com.mojang.serialization.*;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
-import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2FloatMap;
-import it.unimi.dsi.fastutil.objects.Object2FloatOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.*;
 import net.minecraft.advancements.criterion.BlockPredicate;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -69,12 +39,18 @@ import net.minecraft.world.gen.blockstateprovider.SimpleBlockStateProvider;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.*;
+import java.util.function.*;
+
 public final class MoreCodecs {
     public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, Registry.ITEM)
             .xmap(either -> either.map(Function.identity(), ItemStack::new), Either::left);
 
     public static final Codec<BlockState> BLOCK_STATE = Codec.either(BlockState.CODEC, Registry.BLOCK)
-            .xmap(either -> either.map(Function.identity(), Block::getDefaultState), Either::left);
+            .xmap(either -> either.map(Function.identity(), Block::defaultBlockState), Either::left);
 
     public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.CODEC, BLOCK_STATE)
             .xmap(either -> either.map(Function.identity(), SimpleBlockStateProvider::new), Either::left);
@@ -82,19 +58,19 @@ public final class MoreCodecs {
     public static final Codec<ITextComponent> TEXT = withJson(
             ITextComponent.Serializer::toJsonTree,
             json -> {
-                ITextComponent text = ITextComponent.Serializer.getComponentFromJson(json);
+                ITextComponent text = ITextComponent.Serializer.fromJson(json);
                 return text != null ? DataResult.success(text) : DataResult.error("Malformed text");
             }
     );
 
-    public static final Codec<DyeColor> DYE_COLOR = stringVariants(DyeColor.values(), DyeColor::getString);
+    public static final Codec<DyeColor> DYE_COLOR = stringVariants(DyeColor.values(), DyeColor::getSerializedName);
 
     public static final Codec<EquipmentSlotType> EQUIPMENT_SLOT = stringVariants(EquipmentSlotType.values(), EquipmentSlotType::getName);
 
-    public static final Codec<TextFormatting> FORMATTING = stringVariants(TextFormatting.values(), TextFormatting::getFriendlyName);
+    public static final Codec<TextFormatting> FORMATTING = stringVariants(TextFormatting.values(), TextFormatting::getName);
 
     public static final Codec<Color> COLOR = Codec.STRING.comapFlatMap(name -> {
-        Color color = Color.fromHex(name);
+        Color color = Color.parseColor(name);
         return color != null ? DataResult.success(color) : DataResult.error("Invalid color format");
     }, Color::toString);
 
@@ -111,9 +87,9 @@ public final class MoreCodecs {
             UUID::toString
     );
 
-    public static final Codec<BlockPredicate> BLOCK_PREDICATE = withJson(BlockPredicate::serialize, json -> {
+    public static final Codec<BlockPredicate> BLOCK_PREDICATE = withJson(BlockPredicate::serializeToJson, json -> {
         try {
-            return DataResult.success(BlockPredicate.deserialize(json));
+            return DataResult.success(BlockPredicate.fromJson(json));
         } catch (JsonSyntaxException e) {
             return DataResult.error(e.getMessage());
         }
@@ -133,7 +109,7 @@ public final class MoreCodecs {
         } else {
             return DataResult.error("Wrong number of vector components!");
         }
-    }, vector -> ImmutableList.of(vector.getX(), vector.getY(), vector.getZ()));
+    }, vector -> ImmutableList.of(vector.x(), vector.y(), vector.z()));
 
     public static final Codec<AxisAlignedBB> AABB = RecordCodecBuilder.create(instance ->
             instance.group(
@@ -142,16 +118,16 @@ public final class MoreCodecs {
             ).apply(instance, AxisAlignedBB::new)
     );
 
-    public static final Codec<Difficulty> DIFFICULTY = MoreCodecs.stringVariants(Difficulty.values(), Difficulty::getTranslationKey);
+    public static final Codec<Difficulty> DIFFICULTY = MoreCodecs.stringVariants(Difficulty.values(), Difficulty::getKey);
 
     public static final Codec<Potion> POTION = Registry.POTION;
 
     private static final Codec<EffectInstance> EFFECT_INSTANCE_RECORD = RecordCodecBuilder.create(instance -> {
         return instance.group(
-                Registry.EFFECTS.fieldOf("type").forGetter(EffectInstance::getPotion),
+                Registry.MOB_EFFECT.fieldOf("type").forGetter(EffectInstance::getEffect),
                 Codec.FLOAT.fieldOf("seconds").forGetter(c -> c.getDuration() / 20.0F),
                 Codec.INT.fieldOf("amplifier").forGetter(EffectInstance::getAmplifier),
-                Codec.BOOL.optionalFieldOf("hide_particles", false).forGetter(c -> !c.doesShowParticles())
+                Codec.BOOL.optionalFieldOf("hide_particles", false).forGetter(c -> !c.isVisible())
         ).apply(instance, (type, seconds, amplifier, hideParticles) -> {
             return new EffectInstance(type, Math.round(seconds * 20), amplifier, false, hideParticles);
         });
@@ -259,8 +235,8 @@ public final class MoreCodecs {
 
     public static <T> Codec<RegistryKey<T>> registryKey(RegistryKey<? extends Registry<T>> registry) {
         return ResourceLocation.CODEC.xmap(
-                id -> RegistryKey.getOrCreateKey(registry, id),
-                RegistryKey::getLocation
+                id -> RegistryKey.create(registry, id),
+                RegistryKey::location
         );
     }
 
