@@ -1,14 +1,14 @@
 package com.lovetropics.lib.entity;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.projectile.FireworkRocketEntity;
-import net.minecraft.item.DyeColor;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.world.entity.projectile.FireworkRocketEntity;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nonnull;
 import java.util.Random;
@@ -52,15 +52,15 @@ public final class FireworkPalette {
 		return this.palette;
 	}
 
-	public @Nonnull FireworkRocketEntity create(@Nonnull World world) {
-		return this.create(world, new BlockPos(0, 0, 0));
+	public @Nonnull FireworkRocketEntity create(@Nonnull Level level) {
+		return this.create(level, BlockPos.ZERO);
 	}
 
-	public @Nonnull FireworkRocketEntity create(@Nonnull World world, @Nonnull BlockPos pos) {
+	public @Nonnull FireworkRocketEntity create(@Nonnull Level level, @Nonnull BlockPos pos) {
 		ItemStack firework = new ItemStack(Items.FIREWORK_ROCKET);
-		firework.setTag(new CompoundNBT());
+		firework.setTag(new CompoundTag());
 
-		CompoundNBT explosion = new CompoundNBT();
+		CompoundTag explosion = new CompoundTag();
 		explosion.putBoolean("Flicker", true);
 		explosion.putBoolean("Trail", true);
 
@@ -68,7 +68,7 @@ public final class FireworkPalette {
 		if (this.palette.length == 0) {
 			colors = new int[RANDOM.nextInt(8) + 1];
 			for (int i = 0; i < colors.length; i++) {
-				colors[i] = DyeColor.values()[RANDOM.nextInt(16)].getColorValue();
+				colors[i] = DyeColor.values()[RANDOM.nextInt(16)].getFireworkColor();
 			}
 		} else {
 			int[] palette = this.palette[RANDOM.nextInt(this.palette.length)];
@@ -83,31 +83,31 @@ public final class FireworkPalette {
 		type = type == 3 ? 4 : type;
 		explosion.putByte("Type", type);
 
-		ListNBT explosions = new ListNBT();
+		ListTag explosions = new ListTag();
 		explosions.add(explosion);
 
-		CompoundNBT fireworkTag = new CompoundNBT();
+		CompoundTag fireworkTag = new CompoundTag();
 		fireworkTag.put("Explosions", explosions);
 		fireworkTag.putByte("Flight", (byte) 1);
 		firework.addTagElement("Fireworks", fireworkTag);
 
-		return new FireworkRocketEntity(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, firework);
+		return new FireworkRocketEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, firework);
 	}
 
-	public void spawn(@Nonnull BlockPos block, World world) {
-		this.spawn(block, world, 0);
+	public void spawn(@Nonnull BlockPos block, Level level) {
+		this.spawn(block, level, 0);
 	}
 
-	public void spawn(@Nonnull BlockPos pos, World world, int range) {
+	public void spawn(@Nonnull BlockPos pos, Level level, int range) {
 		BlockPos spawnPos = pos;
 
 		// don't bother if there's no randomness at all
 		if (range > 0) {
 			spawnPos = new BlockPos(moveRandomly(spawnPos.getX(), range), spawnPos.getY(), moveRandomly(spawnPos.getZ(), range));
-			BlockState bs = world.getBlockState(spawnPos);
+			BlockState bs = level.getBlockState(spawnPos);
 
 			int tries = -1;
-			while (!world.isEmptyBlock(new BlockPos(spawnPos)) && !bs.getMaterial().blocksMotion()) {
+			while (!level.isEmptyBlock(new BlockPos(spawnPos)) && !bs.getMaterial().blocksMotion()) {
 				tries++;
 				if (tries > 100) {
 					return;
@@ -115,7 +115,7 @@ public final class FireworkPalette {
 			}
 		}
 
-		world.addFreshEntity(this.create(world, spawnPos));
+		level.addFreshEntity(this.create(level, spawnPos));
 	}
 
 	private static double moveRandomly(double base, double range) {

@@ -4,12 +4,12 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
@@ -81,8 +81,8 @@ public final class BlockBox implements Iterable<BlockPos> {
         );
     }
 
-    public Vector3d getCenter() {
-        return new Vector3d(
+    public Vec3 getCenter() {
+        return new Vec3(
                 (this.min.getX() + this.max.getX() + 1.0) / 2.0,
                 (this.min.getY() + this.max.getY() + 1.0) / 2.0,
                 (this.min.getZ() + this.max.getZ() + 1.0) / 2.0
@@ -124,7 +124,7 @@ public final class BlockBox implements Iterable<BlockPos> {
         return this.contains(pos.getX(), pos.getY(), pos.getZ());
     }
 
-    public boolean contains(Vector3d pos) {
+    public boolean contains(Vec3 pos) {
         return this.contains(pos.x, pos.y, pos.z);
     }
 
@@ -142,7 +142,7 @@ public final class BlockBox implements Iterable<BlockPos> {
                 && x <= max.getX() && y <= max.getY() && z <= max.getZ();
     }
 
-    public boolean intersects(AxisAlignedBB aabb) {
+    public boolean intersects(AABB aabb) {
         return aabb.intersects(this.min.getX(), this.min.getY(), this.min.getZ(), this.max.getX() + 1.0, this.max.getY() + 1.0, this.max.getZ() + 1.0);
     }
 
@@ -162,8 +162,8 @@ public final class BlockBox implements Iterable<BlockPos> {
         return new BlockBox(min, max);
     }
 
-    public AxisAlignedBB asAabb() {
-        return new AxisAlignedBB(
+    public AABB asAabb() {
+        return new AABB(
                 this.min.getX(), this.min.getY(), this.min.getZ(),
                 this.max.getX() + 1.0, this.max.getY() + 1.0, this.max.getZ() + 1.0
         );
@@ -191,37 +191,37 @@ public final class BlockBox implements Iterable<BlockPos> {
         return chunks;
     }
 
-    public CompoundNBT write(CompoundNBT root) {
-        root.put("min", writeBlockPos(this.min, new CompoundNBT()));
-        root.put("max", writeBlockPos(this.max, new CompoundNBT()));
+    public CompoundTag write(CompoundTag root) {
+        root.put("min", writeBlockPos(this.min, new CompoundTag()));
+        root.put("max", writeBlockPos(this.max, new CompoundTag()));
         return root;
     }
 
-    public static BlockBox read(CompoundNBT root) {
+    public static BlockBox read(CompoundTag root) {
         BlockPos min = readBlockPos(root.getCompound("min"));
         BlockPos max = readBlockPos(root.getCompound("max"));
         return new BlockBox(min, max);
     }
 
-    public void write(PacketBuffer buffer) {
+    public void write(FriendlyByteBuf buffer) {
         buffer.writeBlockPos(this.min);
         buffer.writeBlockPos(this.max);
     }
 
-    public static BlockBox read(PacketBuffer buffer) {
+    public static BlockBox read(FriendlyByteBuf buffer) {
         BlockPos min = buffer.readBlockPos();
         BlockPos max = buffer.readBlockPos();
         return new BlockBox(min, max);
     }
 
-    private static CompoundNBT writeBlockPos(BlockPos pos, CompoundNBT root) {
+    private static CompoundTag writeBlockPos(BlockPos pos, CompoundTag root) {
         root.putInt("x", pos.getX());
         root.putInt("y", pos.getY());
         root.putInt("z", pos.getZ());
         return root;
     }
 
-    private static BlockPos readBlockPos(CompoundNBT root) {
+    private static BlockPos readBlockPos(CompoundTag root) {
         return new BlockPos(root.getInt("x"), root.getInt("y"), root.getInt("z"));
     }
 }

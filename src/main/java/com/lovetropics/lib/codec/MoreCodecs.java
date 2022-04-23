@@ -7,35 +7,33 @@ import com.google.gson.JsonSyntaxException;
 import com.mojang.datafixers.util.Either;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.datafixers.util.Unit;
+import com.mojang.math.Vector3f;
 import com.mojang.serialization.*;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.*;
-import net.minecraft.advancements.criterion.BlockPredicate;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.inventory.EquipmentSlotType;
-import net.minecraft.item.DyeColor;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.NBTDynamicOps;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Potion;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.math.vector.Vector3f;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.text.Color;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.advancements.critereon.BlockPredicate;
+import net.minecraft.core.Registry;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameType;
-import net.minecraft.world.gen.blockstateprovider.BlockStateProvider;
-import net.minecraft.world.gen.blockstateprovider.SimpleBlockStateProvider;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvider;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 
@@ -46,33 +44,33 @@ import java.util.*;
 import java.util.function.*;
 
 public final class MoreCodecs {
-    public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, Registry.ITEM)
+    public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, Registry.ITEM.byNameCodec())
             .xmap(either -> either.map(Function.identity(), ItemStack::new), Either::left);
 
-    public static final Codec<BlockState> BLOCK_STATE = Codec.either(BlockState.CODEC, Registry.BLOCK)
+    public static final Codec<BlockState> BLOCK_STATE = Codec.either(BlockState.CODEC, Registry.BLOCK.byNameCodec())
             .xmap(either -> either.map(Function.identity(), Block::defaultBlockState), Either::left);
 
     public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.CODEC, BLOCK_STATE)
-            .xmap(either -> either.map(Function.identity(), SimpleBlockStateProvider::new), Either::left);
+            .xmap(either -> either.map(Function.identity(), BlockStateProvider::simple), Either::left);
 
-    public static final Codec<ITextComponent> TEXT = withJson(
-            ITextComponent.Serializer::toJsonTree,
+    public static final Codec<Component> TEXT = withJson(
+            Component.Serializer::toJsonTree,
             json -> {
-                ITextComponent text = ITextComponent.Serializer.fromJson(json);
+                Component text = Component.Serializer.fromJson(json);
                 return text != null ? DataResult.success(text) : DataResult.error("Malformed text");
             }
     );
 
     public static final Codec<DyeColor> DYE_COLOR = stringVariants(DyeColor.values(), DyeColor::getSerializedName);
 
-    public static final Codec<EquipmentSlotType> EQUIPMENT_SLOT = stringVariants(EquipmentSlotType.values(), EquipmentSlotType::getName);
+    public static final Codec<EquipmentSlot> EQUIPMENT_SLOT = stringVariants(EquipmentSlot.values(), EquipmentSlot::getName);
 
-    public static final Codec<TextFormatting> FORMATTING = stringVariants(TextFormatting.values(), TextFormatting::getName);
+    public static final Codec<ChatFormatting> FORMATTING = stringVariants(ChatFormatting.values(), ChatFormatting::getName);
 
-    public static final Codec<Color> COLOR = Codec.STRING.comapFlatMap(name -> {
-        Color color = Color.parseColor(name);
+    public static final Codec<TextColor> COLOR = Codec.STRING.comapFlatMap(name -> {
+        TextColor color = TextColor.parseColor(name);
         return color != null ? DataResult.success(color) : DataResult.error("Invalid color format");
-    }, Color::toString);
+    }, TextColor::toString);
 
     public static final Codec<GameType> GAME_TYPE = stringVariants(GameType.values(), GameType::getName);
 
@@ -95,9 +93,9 @@ public final class MoreCodecs {
         }
     });
 
-    public static final Codec<Vector3d> VECTOR_3D = Codec.DOUBLE.listOf().comapFlatMap(doubles -> {
+    public static final Codec<Vec3> VECTOR_3D = Codec.DOUBLE.listOf().comapFlatMap(doubles -> {
         if (doubles.size() == 3) {
-            return DataResult.success(new Vector3d(doubles.get(0), doubles.get(1), doubles.get(2)));
+            return DataResult.success(new Vec3(doubles.get(0), doubles.get(1), doubles.get(2)));
         } else {
             return DataResult.error("Wrong number of vector components!");
         }
@@ -111,31 +109,29 @@ public final class MoreCodecs {
         }
     }, vector -> ImmutableList.of(vector.x(), vector.y(), vector.z()));
 
-    public static final Codec<AxisAlignedBB> AABB = RecordCodecBuilder.create(instance ->
+    public static final Codec<net.minecraft.world.phys.AABB> AABB = RecordCodecBuilder.create(instance ->
             instance.group(
-                    VECTOR_3D.fieldOf("start").forGetter(aabb -> new Vector3d(aabb.minX, aabb.minY, aabb.minZ)),
-                    VECTOR_3D.fieldOf("end").forGetter(aabb -> new Vector3d(aabb.maxX, aabb.maxY, aabb.maxZ))
-            ).apply(instance, AxisAlignedBB::new)
+                    VECTOR_3D.fieldOf("start").forGetter(aabb -> new Vec3(aabb.minX, aabb.minY, aabb.minZ)),
+                    VECTOR_3D.fieldOf("end").forGetter(aabb -> new Vec3(aabb.maxX, aabb.maxY, aabb.maxZ))
+            ).apply(instance, net.minecraft.world.phys.AABB::new)
     );
 
     public static final Codec<Difficulty> DIFFICULTY = MoreCodecs.stringVariants(Difficulty.values(), Difficulty::getKey);
 
-    public static final Codec<Potion> POTION = Registry.POTION;
+    public static final Codec<Potion> POTION = Registry.POTION.byNameCodec();
 
-    private static final Codec<EffectInstance> EFFECT_INSTANCE_RECORD = RecordCodecBuilder.create(instance -> {
-        return instance.group(
-                Registry.MOB_EFFECT.fieldOf("type").forGetter(EffectInstance::getEffect),
-                Codec.FLOAT.fieldOf("seconds").forGetter(c -> c.getDuration() / 20.0F),
-                Codec.INT.fieldOf("amplifier").forGetter(EffectInstance::getAmplifier),
-                Codec.BOOL.optionalFieldOf("hide_particles", false).forGetter(c -> !c.isVisible())
-        ).apply(instance, (type, seconds, amplifier, hideParticles) -> {
-            return new EffectInstance(type, Math.round(seconds * 20), amplifier, false, hideParticles);
-        });
-    });
+    private static final Codec<MobEffectInstance> EFFECT_INSTANCE_RECORD = RecordCodecBuilder.create(i -> i.group(
+            Registry.MOB_EFFECT.byNameCodec().fieldOf("type").forGetter(MobEffectInstance::getEffect),
+            Codec.FLOAT.fieldOf("seconds").forGetter(c -> c.getDuration() / 20.0F),
+            Codec.INT.fieldOf("amplifier").forGetter(MobEffectInstance::getAmplifier),
+            Codec.BOOL.optionalFieldOf("hide_particles", false).forGetter(c -> !c.isVisible())
+    ).apply(i, (type, seconds, amplifier, hideParticles) -> {
+        return new MobEffectInstance(type, Math.round(seconds * 20), amplifier, false, hideParticles);
+    }));
 
-    public static final Codec<EffectInstance> EFFECT_INSTANCE = Codec.either(POTION, EFFECT_INSTANCE_RECORD)
+    public static final Codec<MobEffectInstance> EFFECT_INSTANCE = Codec.either(POTION, EFFECT_INSTANCE_RECORD)
             .comapFlatMap(either -> either.map(potion -> {
-                List<EffectInstance> effects = potion.getEffects();
+                List<MobEffectInstance> effects = potion.getEffects();
                 if (effects.size() == 1) {
                     return DataResult.success(effects.get(0));
                 } else {
@@ -186,17 +182,17 @@ public final class MoreCodecs {
         return withOps(JsonOps.INSTANCE, encode, decode);
     }
 
-    public static <A> Codec<A> withNbt(Function<A, INBT> encode, Function<INBT, DataResult<A>> decode) {
-        return withOps(NBTDynamicOps.INSTANCE, encode, decode);
+    public static <A> Codec<A> withNbt(Function<A, Tag> encode, Function<Tag, DataResult<A>> decode) {
+        return withOps(NbtOps.INSTANCE, encode, decode);
     }
 
-    public static <A> Codec<A> withNbtCompound(BiFunction<A, CompoundNBT, CompoundNBT> encode, BiConsumer<A, CompoundNBT> decode, Supplier<A> factory) {
+    public static <A> Codec<A> withNbtCompound(BiFunction<A, CompoundTag, CompoundTag> encode, BiConsumer<A, CompoundTag> decode, Supplier<A> factory) {
         return withNbt(
-                value -> encode.apply(value, new CompoundNBT()),
+                value -> encode.apply(value, new CompoundTag()),
                 nbt -> {
-                    if (nbt instanceof CompoundNBT) {
+                    if (nbt instanceof CompoundTag) {
                         A value = factory.get();
-                        decode.accept(value, (CompoundNBT) nbt);
+                        decode.accept(value, (CompoundTag) nbt);
                         return DataResult.success(value);
                     }
                     return DataResult.error("Expected compound tag");
@@ -233,10 +229,10 @@ public final class MoreCodecs {
         return Codec.unboundedMap(codec, Codec.DOUBLE).xmap(Object2DoubleOpenHashMap::new, HashMap::new);
     }
 
-    public static <T> Codec<RegistryKey<T>> registryKey(RegistryKey<? extends Registry<T>> registry) {
+    public static <T> Codec<ResourceKey<T>> resourceKey(ResourceKey<? extends Registry<T>> registry) {
         return ResourceLocation.CODEC.xmap(
-                id -> RegistryKey.create(registry, id),
-                RegistryKey::location
+                id -> ResourceKey.create(registry, id),
+                ResourceKey::location
         );
     }
 

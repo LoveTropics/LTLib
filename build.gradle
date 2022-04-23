@@ -1,12 +1,10 @@
 buildscript {
     repositories {
-        maven { url = 'https://files.minecraftforge.net/maven' }
-        jcenter()
+        maven { url = 'https://maven.minecraftforge.net' }
         mavenCentral()
-        mavenLocal()
     }
     dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '4.1.+', changing: true
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
     }
 }
 apply plugin: 'net.minecraftforge.gradle'
@@ -20,10 +18,10 @@ ext.buildnumber = 0
 project.buildnumber = System.getenv('BUILD_NUMBER')
 version = "${mod_version}-" + (buildnumber ? "${release_type}+${buildnumber}" : "SNAPSHOT")
 
-sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 minecraft {
-    mappings channel: 'official', version: '1.16.5'
+    mappings channel: 'official', version: minecraft_version
     
     accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
 
