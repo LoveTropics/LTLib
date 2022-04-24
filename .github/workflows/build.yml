@@ -3,7 +3,7 @@ name: Java CI with Gradle
 on: [push]
 
 jobs:
-  jdk16:
+  jdk17:
     runs-on: ubuntu-latest
 
     steps:
