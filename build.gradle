@@ -94,7 +94,7 @@ dependencies {
 jar {
     manifest {
         attributes([
-            "FMLModType": "LIBRARY",
+            "FMLModType": "GAMELIBRARY",
             "Specification-Title": "ltlib",
             "Specification-Vendor": "lovetropics",
             "Specification-Version": "1", // We are version 1 of ourselves
