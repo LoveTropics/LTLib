@@ -5,6 +5,7 @@ import com.mojang.serialization.Codec;
 import net.minecraft.server.level.ServerPlayer;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 public final class RoleOverrideType<T> {
     public static final CodecRegistry<String, RoleOverrideType<?>> REGISTRY = CodecRegistry.stringKeys();
@@ -49,7 +50,7 @@ public final class RoleOverrideType<T> {
         return this.codec;
     }
 
-    public T build(T[] overrides) {
+    public T build(List<T> overrides) {
         return builder.apply(overrides);
     }
 
