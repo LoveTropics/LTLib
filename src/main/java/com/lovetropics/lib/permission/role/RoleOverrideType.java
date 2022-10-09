@@ -11,6 +11,7 @@ public final class RoleOverrideType<T> {
 
     private final String id;
     private final Codec<T> codec;
+    private RoleOverrideBuilder<T> builder = RoleOverrideBuilder.first();
     private RoleListener initializeListener;
     private RoleListener changeListener;
 
@@ -23,6 +24,11 @@ public final class RoleOverrideType<T> {
         RoleOverrideType<T> type = new RoleOverrideType<>(id, codec);
         REGISTRY.register(id, type);
         return type;
+    }
+
+    public RoleOverrideType<T> withBuilder(RoleOverrideBuilder<T> builder) {
+        this.builder = builder;
+        return this;
     }
 
     public RoleOverrideType<T> withInitializeListener(RoleListener listener) {
@@ -41,6 +47,10 @@ public final class RoleOverrideType<T> {
 
     public Codec<T> getCodec() {
         return this.codec;
+    }
+
+    public T build(T[] overrides) {
+        return builder.apply(overrides);
     }
 
     public void notifyInitialize(ServerPlayer player) {
