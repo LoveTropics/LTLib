@@ -37,6 +37,7 @@ import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvi
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistryEntry;
+import org.antlr.v4.codegen.model.LabeledOp;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -415,5 +416,12 @@ public final class MoreCodecs {
                 return Stream.of(ops.createString(name));
             }
         };
+    }
+
+    public static <A> MapCodec<A> strictOptionalFieldOf(final Codec<A> codec, final String name, final A defaultValue) {
+        return strictOptionalFieldOf(codec, name).xmap(
+                value -> value.orElse(defaultValue),
+                value -> Objects.equals(value, defaultValue) ? Optional.empty() : Optional.of(value)
+        );
     }
 }
