@@ -9,6 +9,7 @@ import com.mojang.datafixers.util.Pair;
 import com.mojang.datafixers.util.Unit;
 import com.mojang.math.Vector3f;
 import com.mojang.serialization.*;
+import com.mojang.serialization.codecs.OptionalFieldCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -42,6 +43,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.Stream;
 
 public final class MoreCodecs {
     public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, Registry.ITEM.byNameCodec())
@@ -387,5 +389,31 @@ public final class MoreCodecs {
         public <R> DataResult<R> encode(final T input, final DynamicOps<R> ops, final R prefix) {
             return second.encode(input, ops, prefix);
         }
+    }
+
+    public static <A> MapCodec<Optional<A>> strictOptionalFieldOf(final Codec<A> codec, final String name) {
+        return new MapCodec<>() {
+            @Override
+            public <T> DataResult<Optional<A>> decode(final DynamicOps<T> ops, final MapLike<T> input) {
+                final T value = input.get(name);
+                if (value == null) {
+                    return DataResult.success(Optional.empty());
+                }
+                return codec.parse(ops, value).map(Optional::of);
+            }
+
+            @Override
+            public <T> RecordBuilder<T> encode(final Optional<A> input, final DynamicOps<T> ops, final RecordBuilder<T> prefix) {
+                if (input.isPresent()) {
+                    return prefix.add(name, codec.encodeStart(ops, input.get()));
+                }
+                return prefix;
+            }
+
+            @Override
+            public <T> Stream<T> keys(final DynamicOps<T> ops) {
+                return Stream.of(ops.createString(name));
+            }
+        };
     }
 }
