@@ -52,18 +52,23 @@ public final class BackendWebSocketConnection extends SimpleChannelInboundHandle
 	}
 
 	public static CompletableFuture<BackendWebSocketConnection> connect(URI address, Handler handler) {
-		if (!address.getScheme().equals("wss")) {
-			throw new IllegalArgumentException("Backend connection requires wss protocol!");
+		String protocol = address.getScheme();
+		if (!protocol.equals("ws") && !protocol.equals("wss")) {
+			throw new IllegalArgumentException("Backend connection requires ws or wss protocol!");
 		}
 
 		BackendWebSocketConnection connection = new BackendWebSocketConnection(handler);
 
 		HttpHeaders headers = new DefaultHttpHeaders();
 		SslContext ssl;
-		try {
-			ssl = SslContextBuilder.forClient().build();
-		} catch (SSLException e) {
-			throw new RuntimeException(e);
+		if (protocol.equals("wss")) {
+			try {
+				ssl = SslContextBuilder.forClient().build();
+			} catch (SSLException e) {
+				throw new RuntimeException(e);
+			}
+		} else {
+			ssl = null;
 		}
 
 		WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory.newHandshaker(address, WebSocketVersion.V13, null, false, headers, MAX_FRAME_SIZE);
@@ -76,9 +81,11 @@ public final class BackendWebSocketConnection extends SimpleChannelInboundHandle
 			@Override
 			protected void initChannel(SocketChannel channel) {
 				channel.pipeline()
-						.addLast(new WriteTimeoutHandler(TIMEOUT_SECONDS))
-						.addLast(ssl.newHandler(channel.alloc(), address.getHost(), address.getPort()))
-						.addLast(new HttpClientCodec())
+						.addLast(new WriteTimeoutHandler(TIMEOUT_SECONDS));
+				if (ssl != null) {
+					channel.pipeline().addLast(ssl.newHandler(channel.alloc(), address.getHost(), address.getPort()));
+				}
+				channel.pipeline().addLast(new HttpClientCodec())
 						.addLast(new HttpObjectAggregator(MAX_FRAME_SIZE))
 						.addLast(WebSocketClientCompressionHandler.INSTANCE)
 						.addLast(websocket)
