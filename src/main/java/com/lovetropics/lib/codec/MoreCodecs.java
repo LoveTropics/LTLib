@@ -36,7 +36,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvider;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.IForgeRegistry;
-import net.minecraftforge.registries.IForgeRegistryEntry;
 import org.antlr.v4.codegen.model.LabeledOp;
 
 import java.time.LocalDateTime;
@@ -253,7 +252,7 @@ public final class MoreCodecs {
         return new DispatchMapCodec<>(keyCodec, valueCodec);
     }
 
-    public static <T extends IForgeRegistryEntry<T>> Codec<T> ofForgeRegistry(Supplier<IForgeRegistry<T>> registry) {
+    public static <T> Codec<T> ofForgeRegistry(Supplier<IForgeRegistry<T>> registry) {
         return new Codec<T>() {
             @Override
             public <U> DataResult<Pair<T, U>> decode(DynamicOps<U> ops, U input) {

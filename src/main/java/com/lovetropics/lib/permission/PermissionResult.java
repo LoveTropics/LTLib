@@ -3,7 +3,6 @@ package com.lovetropics.lib.permission;
 import com.mojang.serialization.Codec;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.ChatFormatting;
 
 import java.util.Arrays;
@@ -15,7 +14,7 @@ public enum PermissionResult implements StringRepresentable {
     ALLOW("allow", ChatFormatting.GREEN),
     DENY("deny", ChatFormatting.RED);
 
-    public static final Codec<PermissionResult> CODEC = StringRepresentable.fromEnum(PermissionResult::values, PermissionResult::byKey);
+    public static final Codec<PermissionResult> CODEC = StringRepresentable.fromEnum(PermissionResult::values);
 
     private static final String[] KEYS = { "pass", "allow", "deny" };
 
@@ -24,7 +23,7 @@ public enum PermissionResult implements StringRepresentable {
 
     PermissionResult(String key, ChatFormatting color) {
         this.key = key;
-        this.name = new TextComponent(key).withStyle(color);
+        this.name = Component.literal(key).withStyle(color);
     }
 
     public boolean isTerminator() {
@@ -37,14 +36,6 @@ public enum PermissionResult implements StringRepresentable {
 
     public boolean isDenied() {
         return this == DENY;
-    }
-
-    public static PermissionResult byKey(String key) {
-        return switch (key.toLowerCase(Locale.ROOT)) {
-            case "allow", "yes", "true" -> PermissionResult.ALLOW;
-            case "deny", "no", "false" -> PermissionResult.DENY;
-            default -> PermissionResult.PASS;
-        };
     }
 
     @Override
