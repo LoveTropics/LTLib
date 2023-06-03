@@ -7,6 +7,10 @@ buildscript {
         classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
     }
 }
+plugins {
+    id 'com.github.johnrengelman.shadow' version '5.2.0'
+}
+
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
@@ -89,6 +93,8 @@ repositories {
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    shadow group: 'io.netty', name: 'netty-codec-http', version: '4.1.77.Final'
 }
 
 jar {
@@ -111,11 +117,23 @@ task sourceJar(type: Jar, dependsOn: classes) {
     from sourceSets.main.java
 }
 
+configurations {
+    shadow
+    compile.extendsFrom shadow
+}
+
+shadowJar {
+    configurations = [project.configurations.shadow]
+    classifier ''
+}
+
+build.dependsOn(shadowJar)
+
 publishing {
     tasks.publish.dependsOn 'build'
     publications {
         mavenJava(MavenPublication) {
-            artifact jar
+            artifact shadowJar
             artifact sourceJar
         }
     }
