@@ -94,7 +94,9 @@ repositories {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    shadow group: 'io.netty', name: 'netty-codec-http', version: '4.1.77.Final'
+    shadow ('io.netty:netty-codec-http:4.1.77.Final') {
+        transitive = false
+    }
 }
 
 jar {
