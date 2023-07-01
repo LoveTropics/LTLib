@@ -109,6 +109,7 @@ tasks.named('jar', Jar).configure {
         ])
     }
 
+    archiveClassifier = 'slim'
     finalizedBy 'reobfJar'
 }
 
@@ -143,6 +144,8 @@ publishing {
     repositories {
         if (project.hasProperty('mavendir')) {
             maven { url mavendir }
+        } else {
+            mavenLocal()
         }
     }
 }
