@@ -117,7 +117,7 @@ task sourceJar(type: Jar, dependsOn: classes) {
 
 configurations {
     shadow
-    compile.extendsFrom shadow
+    implementation.extendsFrom shadow
 }
 
 shadowJar {
@@ -125,7 +125,14 @@ shadowJar {
     archiveClassifier = ''
 }
 
-build.dependsOn(shadowJar)
+reobf {
+    jar {
+        dependsOn shadowJar
+    }
+    shadowJar {
+        dependsOn jar
+    }
+}
 
 publishing {
     tasks.publish.dependsOn 'build'
