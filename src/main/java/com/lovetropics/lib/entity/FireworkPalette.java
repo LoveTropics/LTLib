@@ -103,15 +103,10 @@ public final class FireworkPalette {
 
 		// don't bother if there's no randomness at all
 		if (range > 0) {
-			spawnPos = new BlockPos(moveRandomly(spawnPos.getX(), range), spawnPos.getY(), moveRandomly(spawnPos.getZ(), range));
+			spawnPos = BlockPos.containing(moveRandomly(spawnPos.getX(), range), spawnPos.getY(), moveRandomly(spawnPos.getZ(), range));
 			BlockState bs = level.getBlockState(spawnPos);
-
-			int tries = -1;
-			while (!level.isEmptyBlock(new BlockPos(spawnPos)) && !bs.getMaterial().blocksMotion()) {
-				tries++;
-				if (tries > 100) {
-					return;
-				}
+			if (!bs.isAir() && !bs.blocksMotion()) {
+				return;
 			}
 		}
 

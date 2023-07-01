@@ -1,22 +1,15 @@
-buildscript {
-    repositories {
-        maven { url = 'https://maven.minecraftforge.net' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
-    }
-}
 plugins {
-    id 'com.github.johnrengelman.shadow' version '5.2.0'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
-
-apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'eclipse'
-apply plugin: 'maven-publish'
 
 group = 'com.lovetropics.lib'
-archivesBaseName = 'LTLib'
+base {
+    archivesName = 'LTLib'
+}
 
 ext.buildnumber = 0
 project.buildnumber = System.getenv('BUILD_NUMBER')
@@ -26,13 +19,14 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 minecraft {
     mappings channel: 'official', version: minecraft_version
-    
+
     accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
 
     runs {
         client {
             taskName 'ltlib_client'
-            
+            copyIdeResources = true
+
             workingDirectory project.file('run')
 
             property 'forge.logging.markers', 'REGISTRIES'
@@ -47,7 +41,8 @@ minecraft {
 
         server {
             taskName 'ltlib_server'
-        
+            copyIdeResources = true
+
             workingDirectory project.file('run')
 
             property 'forge.logging.markers', 'REGISTRIES'
@@ -59,12 +54,13 @@ minecraft {
                 }
             }
         }
-        
+
         data {
             taskName 'ltlib_data'
-        
+            copyIdeResources = true
+
             workingDirectory project.file('run')
-            
+
             environment 'target', 'fmluserdevdata'
 
             property 'forge.logging.markers', 'REGISTRIES'
@@ -75,10 +71,10 @@ minecraft {
                     source sourceSets.main
                 }
             }
-            
+
             args '--mod', 'ltlib', '--all', '--output', '"' + rootProject.file('src/generated/resources/') + '"',
-                 '--existing', '"' + sourceSets.main.resources.srcDirs[0] + '"' 
-            
+                 '--existing', '"' + sourceSets.main.resources.srcDirs[0] + '"'
+
         }
     }
 }
@@ -115,7 +111,7 @@ jar {
 }
 
 task sourceJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
+    archiveClassifier = 'sources'
     from sourceSets.main.java
 }
 
@@ -126,7 +122,7 @@ configurations {
 
 shadowJar {
     configurations = [project.configurations.shadow]
-    classifier ''
+    archiveClassifier = ''
 }
 
 build.dependsOn(shadowJar)

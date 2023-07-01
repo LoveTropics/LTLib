@@ -5,9 +5,11 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -29,15 +31,15 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
         return new BlockBox(BlockBox.min(a, b), BlockBox.max(a, b));
     }
 
-    public static BlockBox ofChunk(int chunkX, int chunkZ) {
+    public static BlockBox ofChunk(LevelHeightAccessor level, int chunkX, int chunkZ) {
         return new BlockBox(
-                new BlockPos(chunkX << 4, 0, chunkZ << 4),
-                new BlockPos((chunkX << 4) + 15, 256, (chunkZ << 16) + 15)
+                new BlockPos(SectionPos.sectionToBlockCoord(chunkX), level.getMinBuildHeight(), SectionPos.sectionToBlockCoord(chunkZ)),
+                new BlockPos(SectionPos.sectionToBlockCoord(chunkX, SectionPos.SECTION_MAX_INDEX), level.getMaxBuildHeight(), SectionPos.sectionToBlockCoord(chunkZ, SectionPos.SECTION_MAX_INDEX))
         );
     }
 
-    public static BlockBox ofChunk(ChunkPos chunkPos) {
-        return ofChunk(chunkPos.x, chunkPos.z);
+    public static BlockBox ofChunk(LevelHeightAccessor level, ChunkPos chunkPos) {
+        return ofChunk(level, chunkPos.x, chunkPos.z);
     }
 
     public static BlockPos min(BlockPos a, BlockPos b) {
@@ -64,7 +66,7 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
         return BlockBox.of(this.min, max);
     }
 
-    public BlockBox offset(double x, double y, double z) {
+    public BlockBox offset(int x, int y, int z) {
         return new BlockBox(
                 this.min.offset(x, y, z),
                 this.max.offset(x, y, z)
@@ -167,10 +169,10 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
     public LongSet asChunks() {
         LongSet chunks = new LongOpenHashSet();
 
-        int minChunkX = this.min.getX() >> 4;
-        int minChunkZ = this.min.getZ() >> 4;
-        int maxChunkX = this.max.getX() >> 4;
-        int maxChunkZ = this.max.getZ() >> 4;
+        int minChunkX = SectionPos.blockToSectionCoord(this.min.getX());
+        int minChunkZ = SectionPos.blockToSectionCoord(this.min.getZ());
+        int maxChunkX = SectionPos.blockToSectionCoord(this.max.getX());
+        int maxChunkZ = SectionPos.blockToSectionCoord(this.max.getZ());
 
         for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
             for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {

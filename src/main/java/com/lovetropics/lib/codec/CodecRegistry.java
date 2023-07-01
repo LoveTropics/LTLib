@@ -57,7 +57,7 @@ public final class CodecRegistry<K, V> implements Codec<V>, Iterable<V> {
         return this.keyCodec.decode(ops, input)
                 .flatMap(pair -> {
                     if (!this.containsKey(pair.getFirst())) {
-                        return DataResult.error("Unknown registry key: " + pair.getFirst());
+                        return DataResult.error(() -> "Unknown registry key: " + pair.getFirst());
                     }
                     return DataResult.success(pair.mapFirst(this::get));
                 });
@@ -67,7 +67,7 @@ public final class CodecRegistry<K, V> implements Codec<V>, Iterable<V> {
     public <U> DataResult<U> encode(V input, DynamicOps<U> ops, U prefix) {
         K key = this.getKey(input);
         if (key == null) {
-            return DataResult.error("Unknown registry element " + input);
+            return DataResult.error(() -> "Unknown registry element " + input);
         }
         return this.keyCodec.encodeStart(ops, key).flatMap(keyData -> {
             return ops.mergeToPrimitive(prefix, keyData);
