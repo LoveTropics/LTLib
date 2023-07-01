@@ -95,7 +95,7 @@ dependencies {
     }
 }
 
-jar {
+tasks.named('jar', Jar).configure {
     manifest {
         attributes([
             "FMLModType": "GAMELIBRARY",
@@ -108,6 +108,8 @@ jar {
             "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
     }
+
+    finalizedBy 'reobfJar'
 }
 
 task sourceJar(type: Jar, dependsOn: classes) {
@@ -123,19 +125,14 @@ configurations {
 shadowJar {
     configurations = [project.configurations.shadow]
     archiveClassifier = ''
+    finalizedBy 'reobfShadowJar'
 }
 
 reobf {
-    jar {
-        dependsOn shadowJar
-    }
-    shadowJar {
-        dependsOn jar
-    }
+    shadowJar {}
 }
 
 publishing {
-    tasks.publish.dependsOn 'build'
     publications {
         mavenJava(MavenPublication) {
             artifact shadowJar
