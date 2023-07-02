@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.phys.AABB;
@@ -15,7 +16,6 @@ import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
-import java.util.Random;
 
 public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos> {
     public static final Codec<BlockBox> CODEC = RecordCodecBuilder.create(i -> i.group(
@@ -104,7 +104,7 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
         return sizeX * sizeY * sizeZ;
     }
 
-    public BlockPos sample(Random random) {
+    public BlockPos sample(RandomSource random) {
         return new BlockPos(
                 this.min.getX() + random.nextInt(this.max.getX() - this.min.getX() + 1),
                 this.min.getY() + random.nextInt(this.max.getY() - this.min.getY() + 1),
