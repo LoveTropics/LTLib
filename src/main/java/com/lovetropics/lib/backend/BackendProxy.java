@@ -77,6 +77,7 @@ public final class BackendProxy implements BackendConnection {
 	private void onConnectionOpen(BackendWebSocketConnection connection) {
 		LOGGER.info("Successfully opened backend connection to {}", this.address);
 		this.connection = connection;
+		this.connecting = false;
 	}
 
 	private void onConnectionError(Throwable throwable) {
