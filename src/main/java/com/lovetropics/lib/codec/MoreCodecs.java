@@ -142,11 +142,23 @@ public final class MoreCodecs {
         return Codec.unboundedMap(codec, Codec.DOUBLE).xmap(Object2DoubleOpenHashMap::new, HashMap::new);
     }
 
+    @Deprecated
     public static <T, C extends List<T>> Codec<C> sorted(Codec<C> codec, Comparator<? super T> comparator) {
         return codec.xmap(
                 list -> {
                     list.sort(comparator);
                     return list;
+                },
+                Function.identity()
+        );
+    }
+
+    public static <T> Codec<List<T>> sortedList(Codec<T> codec, Comparator<? super T> comparator) {
+        return codec.listOf().xmap(
+                list -> {
+                    list = new ArrayList<>(list);
+                    list.sort(comparator);
+                    return List.copyOf(list);
                 },
                 Function.identity()
         );
