@@ -61,11 +61,14 @@ public final class MoreCodecs {
 
     private static final Codec<MobEffectInstance> EFFECT_INSTANCE_RECORD = RecordCodecBuilder.create(i -> i.group(
             BuiltInRegistries.MOB_EFFECT.byNameCodec().fieldOf("type").forGetter(MobEffectInstance::getEffect),
-            Codec.FLOAT.fieldOf("seconds").forGetter(c -> (float) c.getDuration() / SharedConstants.TICKS_PER_SECOND),
+            Codec.FLOAT.optionalFieldOf("seconds").forGetter(c -> c.isInfiniteDuration() ? Optional.empty() : Optional.of((float) c.getDuration() / SharedConstants.TICKS_PER_SECOND)),
             Codec.INT.fieldOf("amplifier").forGetter(MobEffectInstance::getAmplifier),
-            Codec.BOOL.optionalFieldOf("hide_particles", false).forGetter(c -> !c.isVisible())
-    ).apply(i, (type, seconds, amplifier, hideParticles) -> {
-        return new MobEffectInstance(type, Math.round(seconds * SharedConstants.TICKS_PER_SECOND), amplifier, false, hideParticles);
+            Codec.BOOL.optionalFieldOf("ambient", false).forGetter(MobEffectInstance::isAmbient),
+            Codec.BOOL.optionalFieldOf("particles", true).forGetter(MobEffectInstance::isVisible),
+            Codec.BOOL.optionalFieldOf("show_icon", false).forGetter(MobEffectInstance::showIcon)
+    ).apply(i, (type, seconds, amplifier, ambient, hideParticles, showIcon) -> {
+        final int ticks = seconds.map(s -> Math.round(s * SharedConstants.TICKS_PER_SECOND)).orElse(MobEffectInstance.INFINITE_DURATION);
+        return new MobEffectInstance(type, ticks, amplifier, ambient, hideParticles, showIcon);
     }));
 
     public static final Codec<MobEffectInstance> EFFECT_INSTANCE = Codec.either(POTION, EFFECT_INSTANCE_RECORD)
