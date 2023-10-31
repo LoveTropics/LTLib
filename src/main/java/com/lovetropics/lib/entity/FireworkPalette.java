@@ -42,6 +42,11 @@ public final class FireworkPalette {
 			new int[] { 0x000000 }
 	);
 
+	public static final FireworkPalette SUSTAINABLE_HARVEST = new FireworkPalette(
+			new int[] { 0xed8b26, 0xffb798, 0xffb85c, 0x0b502f, 0x00000 },
+			new int[] { 0xffb85c, 0xffb85c, 0x5fbfa2, 0xc0f3ed, 0xfffff }
+	);
+
 	private final int[][] palette;
 
 	private FireworkPalette(int[]... palette) {
