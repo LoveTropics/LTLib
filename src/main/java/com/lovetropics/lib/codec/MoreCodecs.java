@@ -65,7 +65,7 @@ public final class MoreCodecs {
             Codec.INT.fieldOf("amplifier").forGetter(MobEffectInstance::getAmplifier),
             Codec.BOOL.optionalFieldOf("ambient", false).forGetter(MobEffectInstance::isAmbient),
             Codec.BOOL.optionalFieldOf("particles", true).forGetter(MobEffectInstance::isVisible),
-            Codec.BOOL.optionalFieldOf("show_icon", false).forGetter(MobEffectInstance::showIcon)
+            Codec.BOOL.optionalFieldOf("show_icon", true).forGetter(MobEffectInstance::showIcon)
     ).apply(i, (type, seconds, amplifier, ambient, hideParticles, showIcon) -> {
         final int ticks = seconds.map(s -> Math.round(s * SharedConstants.TICKS_PER_SECOND)).orElse(MobEffectInstance.INFINITE_DURATION);
         return new MobEffectInstance(type, ticks, amplifier, ambient, hideParticles, showIcon);
