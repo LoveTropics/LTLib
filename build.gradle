@@ -13,7 +13,7 @@ base {
 
 ext.buildnumber = 0
 project.buildnumber = System.getenv('BUILD_NUMBER')
-version = "${mod_version}" + (buildnumber ? ".${buildnumber}-${release_type}" : ".0-SNAPSHOT")
+version = "${mod_version}" + (buildnumber ? ".${buildnumber}" : ".0-SNAPSHOT")
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
