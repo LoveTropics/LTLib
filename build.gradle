@@ -79,10 +79,10 @@ tasks.named('jar', Jar).configure {
     }
 
     archiveClassifier = 'slim'
-    finalizedBy 'reobfJar'
 }
 
-task sourceJar(type: Jar, dependsOn: classes) {
+tasks.register('sourceJar', Jar) {
+    dependsOn classes
     archiveClassifier = 'sources'
     from sourceSets.main.java
 }
@@ -95,7 +95,6 @@ configurations {
 shadowJar {
     configurations = [project.configurations.shadow]
     archiveClassifier = ''
-    finalizedBy 'reobfShadowJar'
 
     ['http', 'rtsp', 'spdy'].forEach {
         relocate "io.netty.handler.codec.$it", "com.lovetropics.lib.repack.io.netty.handler.codec.$it"
