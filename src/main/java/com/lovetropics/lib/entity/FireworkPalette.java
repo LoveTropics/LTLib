@@ -1,6 +1,8 @@
 package com.lovetropics.lib.entity;
 
+import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.util.RandomSource;
@@ -8,10 +10,13 @@ import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.FireworkExplosion;
+import net.minecraft.world.item.component.Fireworks;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 
 public final class FireworkPalette {
 	private static final RandomSource RANDOM = RandomSource.create();
@@ -63,11 +68,6 @@ public final class FireworkPalette {
 
 	public @Nonnull FireworkRocketEntity create(@Nonnull Level level, @Nonnull BlockPos pos) {
 		ItemStack firework = new ItemStack(Items.FIREWORK_ROCKET);
-		firework.setTag(new CompoundTag());
-
-		CompoundTag explosion = new CompoundTag();
-		explosion.putBoolean("Flicker", true);
-		explosion.putBoolean("Trail", true);
 
 		int[] colors;
 		if (this.palette.length == 0) {
@@ -83,18 +83,16 @@ public final class FireworkPalette {
 			}
 		}
 
-		explosion.putIntArray("Colors", colors);
-		byte type = (byte) (RANDOM.nextInt(3) + 1);
-		type = type == 3 ? 4 : type;
-		explosion.putByte("Type", type);
+		int type = RANDOM.nextInt(3) + 1;
 
-		ListTag explosions = new ListTag();
-		explosions.add(explosion);
+		// Skip creeper firework type
+		if (type == 3) {
+			type = 4;
+		}
 
-		CompoundTag fireworkTag = new CompoundTag();
-		fireworkTag.put("Explosions", explosions);
-		fireworkTag.putByte("Flight", (byte) 1);
-		firework.addTagElement("Fireworks", fireworkTag);
+		FireworkExplosion explosion = new FireworkExplosion(FireworkExplosion.Shape.byId(type), IntList.of(colors), IntList.of(), true, true);
+
+		firework.set(DataComponents.FIREWORKS, new Fireworks(1, List.of(explosion)));
 
 		return new FireworkRocketEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, firework);
 	}

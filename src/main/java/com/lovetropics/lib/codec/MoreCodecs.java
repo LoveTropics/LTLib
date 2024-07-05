@@ -1,22 +1,22 @@
 package com.lovetropics.lib.codec;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonSyntaxException;
 import com.mojang.datafixers.util.Either;
 import com.mojang.datafixers.util.Pair;
-import com.mojang.datafixers.util.Unit;
-import com.mojang.serialization.*;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.DynamicOps;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.*;
+import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
+import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2FloatMap;
+import it.unimi.dsi.fastutil.objects.Object2FloatOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.SharedConstants;
-import net.minecraft.advancements.critereon.BlockPredicate;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.level.block.Block;
@@ -27,10 +27,15 @@ import net.minecraft.world.phys.Vec3;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.IntFunction;
-import java.util.stream.Stream;
 
 public final class MoreCodecs {
     public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, BuiltInRegistries.ITEM.byNameCodec())
@@ -42,16 +47,6 @@ public final class MoreCodecs {
     public static final Codec<BlockStateProvider> BLOCK_STATE_PROVIDER = Codec.either(BlockStateProvider.CODEC, BLOCK_STATE)
             .xmap(either -> either.map(Function.identity(), BlockStateProvider::simple), Either::left);
 
-    public static final Codec<EquipmentSlot> EQUIPMENT_SLOT = stringVariants(EquipmentSlot.values(), EquipmentSlot::getName);
-
-    public static final Codec<BlockPredicate> BLOCK_PREDICATE = ExtraCodecs.JSON.comapFlatMap(json -> {
-        try {
-            return DataResult.success(BlockPredicate.fromJson(json));
-        } catch (JsonSyntaxException e) {
-            return DataResult.error(e::getMessage);
-        }
-    }, BlockPredicate::serializeToJson);
-
     public static final Codec<net.minecraft.world.phys.AABB> AABB = RecordCodecBuilder.create(i -> i.group(
             Vec3.CODEC.fieldOf("start").forGetter(aabb -> new Vec3(aabb.minX, aabb.minY, aabb.minZ)),
             Vec3.CODEC.fieldOf("end").forGetter(aabb -> new Vec3(aabb.maxX, aabb.maxY, aabb.maxZ))
@@ -60,7 +55,7 @@ public final class MoreCodecs {
     public static final Codec<Potion> POTION = BuiltInRegistries.POTION.byNameCodec();
 
     private static final Codec<MobEffectInstance> EFFECT_INSTANCE_RECORD = RecordCodecBuilder.create(i -> i.group(
-            BuiltInRegistries.MOB_EFFECT.byNameCodec().fieldOf("type").forGetter(MobEffectInstance::getEffect),
+            BuiltInRegistries.MOB_EFFECT.holderByNameCodec().fieldOf("type").forGetter(MobEffectInstance::getEffect),
             Codec.FLOAT.optionalFieldOf("seconds").forGetter(c -> c.isInfiniteDuration() ? Optional.empty() : Optional.of((float) c.getDuration() / SharedConstants.TICKS_PER_SECOND)),
             Codec.INT.fieldOf("amplifier").forGetter(MobEffectInstance::getAmplifier),
             Codec.BOOL.optionalFieldOf("ambient", false).forGetter(MobEffectInstance::isAmbient),
@@ -75,14 +70,14 @@ public final class MoreCodecs {
             .comapFlatMap(either -> either.map(potion -> {
                 List<MobEffectInstance> effects = potion.getEffects();
                 if (effects.size() == 1) {
-                    return DataResult.success(effects.get(0));
+                    return DataResult.success(effects.getFirst());
                 } else {
                     return DataResult.error(() -> "Potion must have only 1 effect");
                 }
             }, DataResult::success), Either::right);
 
     public static <T> MapCodec<T> inputOptionalFieldOf(Codec<T> codec, String name, T fallback) {
-        return Codec.optionalField(name, codec).xmap(
+        return Codec.optionalField(name, codec, false).xmap(
                 o -> o.orElse(fallback),
                 Optional::of
         );
@@ -145,17 +140,6 @@ public final class MoreCodecs {
         return Codec.unboundedMap(codec, Codec.DOUBLE).xmap(Object2DoubleOpenHashMap::new, HashMap::new);
     }
 
-    @Deprecated
-    public static <T, C extends List<T>> Codec<C> sorted(Codec<C> codec, Comparator<? super T> comparator) {
-        return codec.xmap(
-                list -> {
-                    list.sort(comparator);
-                    return list;
-                },
-                Function.identity()
-        );
-    }
-
     public static <T> Codec<List<T>> sortedList(Codec<T> codec, Comparator<? super T> comparator) {
         return codec.listOf().xmap(
                 list -> {
@@ -165,10 +149,6 @@ public final class MoreCodecs {
                 },
                 Function.identity()
         );
-    }
-
-    public static <K, V> Codec<Map<K, V>> dispatchByMapKey(Codec<K> keyCodec, Function<K, Codec<V>> valueCodec) {
-        return new DispatchMapCodec<>(keyCodec, valueCodec);
     }
 
     public static Codec<LocalDateTime> localDateTime(DateTimeFormatter formatter) {
@@ -185,98 +165,9 @@ public final class MoreCodecs {
     }
 
     public static <T> Codec<T> tryFirst(Codec<T> first, Codec<T> second) {
-        return new TryFirstCodec<>(first, second);
-    }
-
-    record DispatchMapCodec<K, V>(Codec<K> keyCodec, Function<K, Codec<V>> valueCodec) implements Codec<Map<K, V>> {
-        @Override
-        public <T> DataResult<Pair<Map<K, V>, T>> decode(DynamicOps<T> ops, T input) {
-            return ops.getMap(input).flatMap(mapInput -> {
-                ImmutableMap.Builder<K, V> read = ImmutableMap.builder();
-                ImmutableList.Builder<Pair<T, T>> failed = ImmutableList.builder();
-
-                DataResult<Unit> result = mapInput.entries().reduce(
-                        DataResult.success(Unit.INSTANCE, Lifecycle.stable()),
-                        (r, pair) -> this.keyCodec.parse(ops, pair.getFirst()).flatMap(key -> {
-                            DataResult<Pair<K, V>> entry = this.valueCodec.apply(key).parse(ops, pair.getSecond())
-                                    .map(value -> Pair.of(key, value));
-                            entry.error().ifPresent(e -> failed.add(pair));
-
-                            return r.apply2stable((u, p) -> {
-                                read.put(p.getFirst(), p.getSecond());
-                                return u;
-                            }, entry);
-                        }),
-                        (r1, r2) -> r1.apply2stable((u1, u2) -> u1, r2)
-                );
-
-                Map<K, V> elements = read.build();
-                T errors = ops.createMap(failed.build().stream());
-
-                return result.map(unit -> Pair.of(elements, input))
-                        .setPartial(Pair.of(elements, input))
-                        .mapError(e -> e + " missed input: " + errors);
-            });
-        }
-
-        @Override
-        public <T> DataResult<T> encode(Map<K, V> input, DynamicOps<T> ops, T prefix) {
-            RecordBuilder<T> map = ops.mapBuilder();
-            for (Map.Entry<K, V> entry : input.entrySet()) {
-                K key = entry.getKey();
-                V value = entry.getValue();
-                map.add(this.keyCodec.encodeStart(ops, key), this.valueCodec.apply(key).encodeStart(ops, value));
-            }
-            return map.build(prefix);
-        }
-    }
-
-    record TryFirstCodec<T>(Codec<T> first, Codec<T> second) implements Codec<T> {
-        @Override
-        public <R> DataResult<Pair<T, R>> decode(final DynamicOps<R> ops, final R input) {
-            final DataResult<Pair<T, R>> firstRead = first.decode(ops, input);
-            if (firstRead.result().isPresent()) {
-                return firstRead;
-            }
-            return second.decode(ops, input);
-        }
-
-        @Override
-        public <R> DataResult<R> encode(final T input, final DynamicOps<R> ops, final R prefix) {
-            return second.encode(input, ops, prefix);
-        }
-    }
-
-    public static <A> MapCodec<Optional<A>> strictOptionalFieldOf(final Codec<A> codec, final String name) {
-        return new MapCodec<>() {
-            @Override
-            public <T> DataResult<Optional<A>> decode(final DynamicOps<T> ops, final MapLike<T> input) {
-                final T value = input.get(name);
-                if (value == null) {
-                    return DataResult.success(Optional.empty());
-                }
-                return codec.parse(ops, value).map(Optional::of);
-            }
-
-            @Override
-            public <T> RecordBuilder<T> encode(final Optional<A> input, final DynamicOps<T> ops, final RecordBuilder<T> prefix) {
-                if (input.isPresent()) {
-                    return prefix.add(name, codec.encodeStart(ops, input.get()));
-                }
-                return prefix;
-            }
-
-            @Override
-            public <T> Stream<T> keys(final DynamicOps<T> ops) {
-                return Stream.of(ops.createString(name));
-            }
-        };
-    }
-
-    public static <A> MapCodec<A> strictOptionalFieldOf(final Codec<A> codec, final String name, final A defaultValue) {
-        return strictOptionalFieldOf(codec, name).xmap(
-                value -> value.orElse(defaultValue),
-                value -> Objects.equals(value, defaultValue) ? Optional.empty() : Optional.of(value)
+        return Codec.either(first, second).xmap(
+                either -> either.map(Function.identity(), Function.identity()),
+                Either::right
         );
     }
 }

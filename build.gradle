@@ -1,8 +1,9 @@
 plugins {
     id 'eclipse'
     id 'idea'
+    id 'java-library'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'net.neoforged.gradle.userdev' version '7.0.145'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
@@ -15,67 +16,35 @@ ext.buildnumber = 0
 project.buildnumber = System.getenv('BUILD_NUMBER')
 version = "${mod_version}" + (buildnumber ? ".${buildnumber}" : ".0-SNAPSHOT")
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-minecraft {
-    mappings channel: 'official', version: minecraft_version
+runs {
+    configureEach {
+        workingDirectory project.file('run')
 
-    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+        systemProperty 'forge.logging.markers', 'REGISTRIES'
+        systemProperty 'forge.logging.console.level', 'debug'
 
-    runs {
-        client {
-            taskName 'ltlib_client'
-            copyIdeResources = true
+        modSource project.sourceSets.main
+    }
 
-            workingDirectory project.file('run')
+    client {
+        programArguments.addAll '--username', 'Dev###'
+    }
 
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
+    server {
+        programArgument '--nogui'
+    }
 
-            mods {
-                ltlib {
-                    source sourceSets.main
-                }
-            }
-        }
+    data {
+        programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+    }
+}
 
-        server {
-            taskName 'ltlib_server'
-            copyIdeResources = true
-
-            workingDirectory project.file('run')
-
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-
-            mods {
-                ltlib {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        data {
-            taskName 'ltlib_data'
-            copyIdeResources = true
-
-            workingDirectory project.file('run')
-
-            environment 'target', 'fmluserdevdata'
-
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-
-            mods {
-                ltlib {
-                    source sourceSets.main
-                }
-            }
-
-            args '--mod', 'ltlib', '--all', '--output', '"' + rootProject.file('src/generated/resources/') + '"',
-                 '--existing', '"' + sourceSets.main.resources.srcDirs[0] + '"'
-
-        }
+subsystems {
+    parchment {
+        minecraftVersion = minecraft_version
+        mappingsVersion = parchment_version
     }
 }
 
@@ -88,7 +57,7 @@ repositories {
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    implementation "net.neoforged:neoforge:${neo_version}"
 
     shadow ('io.netty:netty-codec-http:4.1.82.Final') {
         transitive = false
@@ -131,10 +100,6 @@ shadowJar {
     ['http', 'rtsp', 'spdy'].forEach {
         relocate "io.netty.handler.codec.$it", "com.lovetropics.lib.repack.io.netty.handler.codec.$it"
     }
-}
-
-reobf {
-    shadowJar {}
 }
 
 publishing {
