@@ -2,12 +2,13 @@ package com.lovetropics.lib;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import io.netty.buffer.ByteBuf;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
@@ -23,12 +24,18 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
             BlockPos.CODEC.fieldOf("max").forGetter(c -> c.max)
     ).apply(i, BlockBox::of));
 
+    public static final StreamCodec<ByteBuf, BlockBox> STREAM_CODEC = StreamCodec.composite(
+            BlockPos.STREAM_CODEC, BlockBox::min,
+            BlockPos.STREAM_CODEC, BlockBox::max,
+            BlockBox::of
+    );
+
     public static BlockBox of(BlockPos pos) {
         return new BlockBox(pos, pos);
     }
 
     public static BlockBox of(BlockPos a, BlockPos b) {
-        return new BlockBox(BlockBox.min(a, b), BlockBox.max(a, b));
+        return new BlockBox(BlockPos.min(a, b), BlockPos.max(a, b));
     }
 
     public static BlockBox ofChunk(LevelHeightAccessor level, int chunkX, int chunkZ) {
@@ -40,22 +47,6 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
 
     public static BlockBox ofChunk(LevelHeightAccessor level, ChunkPos chunkPos) {
         return ofChunk(level, chunkPos.x, chunkPos.z);
-    }
-
-    public static BlockPos min(BlockPos a, BlockPos b) {
-        return new BlockPos(
-                Math.min(a.getX(), b.getX()),
-                Math.min(a.getY(), b.getY()),
-                Math.min(a.getZ(), b.getZ())
-        );
-    }
-
-    public static BlockPos max(BlockPos a, BlockPos b) {
-        return new BlockPos(
-                Math.max(a.getX(), b.getX()),
-                Math.max(a.getY(), b.getY()),
-                Math.max(a.getZ(), b.getZ())
-        );
     }
 
     public BlockBox withMin(BlockPos min) {
@@ -146,8 +137,8 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
 
     @Nullable
     public BlockBox intersection(BlockBox other) {
-        BlockPos min = max(this.min, other.min);
-        BlockPos max = min(this.max, other.max);
+        BlockPos min = BlockPos.max(this.min, other.min);
+        BlockPos max = BlockPos.min(this.max, other.max);
         if (min.getX() >= max.getX() || min.getY() >= max.getY() || min.getZ() >= max.getZ()) {
             return null;
         }
@@ -192,17 +183,6 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
     public static BlockBox read(CompoundTag root) {
         BlockPos min = readBlockPos(root.getCompound("min"));
         BlockPos max = readBlockPos(root.getCompound("max"));
-        return new BlockBox(min, max);
-    }
-
-    public void write(FriendlyByteBuf buffer) {
-        buffer.writeBlockPos(this.min);
-        buffer.writeBlockPos(this.max);
-    }
-
-    public static BlockBox read(FriendlyByteBuf buffer) {
-        BlockPos min = buffer.readBlockPos();
-        BlockPos max = buffer.readBlockPos();
         return new BlockBox(min, max);
     }
 
