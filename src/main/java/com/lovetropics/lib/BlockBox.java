@@ -150,7 +150,7 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
     public BlockBox encompassing(BlockBox other) {
         return new BlockBox(
                 BlockPos.min(this.min, other.min),
-                BlockPos.max(this.min, other.min)
+                BlockPos.max(this.max, other.max)
         );
     }
 
