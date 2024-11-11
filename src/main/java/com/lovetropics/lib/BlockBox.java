@@ -14,6 +14,8 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
@@ -145,11 +147,22 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
         return new BlockBox(min, max);
     }
 
-    public AABB asAabb() {
-        return new AABB(
+    public BlockBox encompassing(BlockBox other) {
+        return new BlockBox(
+                BlockPos.min(this.min, other.min),
+                BlockPos.max(this.min, other.min)
+        );
+    }
+
+    public VoxelShape asShape() {
+        return Shapes.create(
                 this.min.getX(), this.min.getY(), this.min.getZ(),
                 this.max.getX() + 1.0, this.max.getY() + 1.0, this.max.getZ() + 1.0
         );
+    }
+
+    public AABB asAabb() {
+        return AABB.encapsulatingFullBlocks(min, max);
     }
 
     @Override
