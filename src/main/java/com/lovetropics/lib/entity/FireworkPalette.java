@@ -54,8 +54,14 @@ public final class FireworkPalette {
 
 	private final int[][] palette;
 
-	private FireworkPalette(int[]... palette) {
+	public FireworkPalette(int[]... palette) {
 		this.palette = palette;
+	}
+
+	public static FireworkPalette forDye(DyeColor color) {
+		return new FireworkPalette(
+				new int[]{color.getFireworkColor(), color.getTextColor(), color.getTextureDiffuseColor()}
+		);
 	}
 
 	public int[][] getPalette() {
