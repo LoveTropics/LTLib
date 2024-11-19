@@ -10,7 +10,8 @@ import java.util.function.Supplier;
 
 public final class BackendProxy implements BackendConnection {
 	private static final Logger LOGGER = LogManager.getLogger(BackendProxy.class);
-	private static final long RECONNECT_INTERVAL_MS = 10 * 1000;
+	private static final long BASE_RECONNECT_INTERVAL_MS = 10 * 1000;
+	private static final long MAX_RECONNECT_INTERVAL_MS = 5 * 60 * 1000;
 	private static final long PING_INTERVAL_MS = 2 * 1000;
 
 	private final Supplier<URI> address;
@@ -21,6 +22,8 @@ public final class BackendProxy implements BackendConnection {
 
 	private long lastConnectTime;
 	private long lastPingTime;
+
+	private long reconnectIntervalMs = BASE_RECONNECT_INTERVAL_MS;
 
 	public BackendProxy(Supplier<URI> address, BackendConnection.Handler handler) {
 		this.address = address;
@@ -51,7 +54,7 @@ public final class BackendProxy implements BackendConnection {
 	}
 
 	private void tickDisconnected(long time) {
-		if (time - this.lastConnectTime > RECONNECT_INTERVAL_MS) {
+		if (time - this.lastConnectTime > reconnectIntervalMs) {
 			this.initiateConnection();
 		}
 	}
@@ -78,11 +81,13 @@ public final class BackendProxy implements BackendConnection {
 		LOGGER.info("Successfully opened backend connection to {}", this.address);
 		this.connection = connection;
 		this.connecting = false;
+		this.reconnectIntervalMs = BASE_RECONNECT_INTERVAL_MS;
 	}
 
 	private void onConnectionError(Throwable throwable) {
 		LOGGER.error("Failed to open backend connection to {}", this.address, throwable);
 		this.closeConnection();
+		this.reconnectIntervalMs = Math.min(this.reconnectIntervalMs * 2, MAX_RECONNECT_INTERVAL_MS);
 	}
 
 	private void closeConnection() {
