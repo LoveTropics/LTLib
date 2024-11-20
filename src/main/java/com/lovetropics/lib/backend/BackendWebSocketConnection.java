@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mojang.logging.LogUtils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -18,6 +19,7 @@ import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketCl
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+import org.slf4j.Logger;
 
 import javax.net.ssl.SSLException;
 import java.net.URI;
@@ -33,12 +35,12 @@ public final class BackendWebSocketConnection extends SimpleChannelInboundHandle
 					.setDaemon(true)
 					.build()
 	);
+	private static final Logger LOGGER = LogUtils.getLogger();
 
 	private static final int TIMEOUT_SECONDS = 30;
 	private static final int MAX_FRAME_SIZE = 16 * 1024 * 1024;
 
 	private static final Gson GSON = new Gson();
-	private static final JsonParser JSON_PARSER = new JsonParser();
 
 	private final Handler handler;
 
@@ -164,8 +166,12 @@ public final class BackendWebSocketConnection extends SimpleChannelInboundHandle
 	}
 
 	private void acceptTextFrame(TextWebSocketFrame textFrame) {
-		JsonObject payload = JSON_PARSER.parse(textFrame.text()).getAsJsonObject();
-		this.handler.acceptMessage(payload);
+		try {
+			JsonObject payload = JsonParser.parseString(textFrame.text()).getAsJsonObject();
+			this.handler.acceptMessage(payload);
+		} catch (Exception e) {
+			LOGGER.error("An exception occurred while handling event: {}", textFrame.text(), e);
+		}
 	}
 
 	private void acceptCloseFrame(CloseWebSocketFrame closeFrame) {
