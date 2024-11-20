@@ -1,10 +1,8 @@
 package com.lovetropics.lib.codec;
 
 import com.mojang.datafixers.util.Either;
-import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
-import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -24,7 +22,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvider;
 import net.minecraft.world.phys.Vec3;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -163,6 +163,19 @@ public final class MoreCodecs {
                 formatter::format
         );
     }
+
+    public static Codec<Instant> instantCodec(DateTimeFormatter formatter) {
+        return MoreCodecs.localDateTime(formatter).xmap(
+                localTime -> localTime.atOffset(ZoneOffset.UTC).toInstant(),
+                instant -> instant.atOffset(ZoneOffset.UTC).toLocalDateTime()
+        );
+    }
+
+    public static final Codec<Instant> TIME_CODEC = Codec.withAlternative(
+            instantCodec(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")),
+            // Why can we receive this one too? No idea! But we get it now
+            instantCodec(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+    );
 
     public static <T> Codec<T> tryFirst(Codec<T> first, Codec<T> second) {
         return Codec.either(first, second).xmap(
