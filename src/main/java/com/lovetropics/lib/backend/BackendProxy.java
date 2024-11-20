@@ -78,14 +78,14 @@ public final class BackendProxy implements BackendConnection {
 	}
 
 	private void onConnectionOpen(BackendWebSocketConnection connection) {
-		LOGGER.info("Successfully opened backend connection to {}", this.address);
+		LOGGER.info("Successfully opened backend connection to {}", this.address.get());
 		this.connection = connection;
 		this.connecting = false;
 		this.reconnectIntervalMs = BASE_RECONNECT_INTERVAL_MS;
 	}
 
 	private void onConnectionError(Throwable throwable) {
-		LOGGER.error("Failed to open backend connection to {}", this.address, throwable);
+		LOGGER.error("Failed to open backend connection to {}", this.address.get(), throwable);
 		this.closeConnection();
 		this.reconnectIntervalMs = Math.min(this.reconnectIntervalMs * 2, MAX_RECONNECT_INTERVAL_MS);
 	}
