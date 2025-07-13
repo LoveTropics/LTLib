@@ -42,8 +42,8 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
 
     public static BlockBox ofChunk(LevelHeightAccessor level, int chunkX, int chunkZ) {
         return new BlockBox(
-                new BlockPos(SectionPos.sectionToBlockCoord(chunkX), level.getMinBuildHeight(), SectionPos.sectionToBlockCoord(chunkZ)),
-                new BlockPos(SectionPos.sectionToBlockCoord(chunkX, SectionPos.SECTION_MAX_INDEX), level.getMaxBuildHeight(), SectionPos.sectionToBlockCoord(chunkZ, SectionPos.SECTION_MAX_INDEX))
+                new BlockPos(SectionPos.sectionToBlockCoord(chunkX), level.getMinY(), SectionPos.sectionToBlockCoord(chunkZ)),
+                new BlockPos(SectionPos.sectionToBlockCoord(chunkX, SectionPos.SECTION_MAX_INDEX), level.getMaxY(), SectionPos.sectionToBlockCoord(chunkZ, SectionPos.SECTION_MAX_INDEX))
         );
     }
 
@@ -194,8 +194,8 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
     }
 
     public static BlockBox read(CompoundTag root) {
-        BlockPos min = readBlockPos(root.getCompound("min"));
-        BlockPos max = readBlockPos(root.getCompound("max"));
+        BlockPos min = readBlockPos(root.getCompoundOrEmpty("min"));
+        BlockPos max = readBlockPos(root.getCompoundOrEmpty("max"));
         return new BlockBox(min, max);
     }
 
@@ -207,6 +207,6 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
     }
 
     private static BlockPos readBlockPos(CompoundTag root) {
-        return new BlockPos(root.getInt("x"), root.getInt("y"), root.getInt("z"));
+        return new BlockPos(root.getIntOr("x", 0), root.getIntOr("y", 0), root.getIntOr("z", 0));
     }
 }

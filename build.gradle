@@ -3,7 +3,7 @@ plugins {
     id 'idea'
     id 'java-library'
     id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '7.0.145'
+    id 'net.neoforged.moddev' version '2.0.96'
     id 'io.github.goooler.shadow' version '8.1.8'
 }
 
@@ -18,35 +18,58 @@ version = "${mod_version}" + (buildnumber ? ".${buildnumber}" : ".0-SNAPSHOT")
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-runs {
-    configureEach {
-        workingDirectory project.file('run')
+neoForge {
+    version = project.neo_version
 
-        systemProperty 'forge.logging.markers', 'REGISTRIES'
-        systemProperty 'forge.logging.console.level', 'debug'
-
-        modSource project.sourceSets.main
-    }
-
-    client {
-        programArguments.addAll '--username', 'Dev###'
-    }
-
-    server {
-        programArgument '--nogui'
-    }
-
-    data {
-        programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
-    }
-}
-
-subsystems {
     parchment {
-        minecraftVersion = minecraft_version
+        minecraftVersion = parchment_minecraft_version
         mappingsVersion = parchment_version
     }
+
+    addModdingDependenciesTo sourceSets.test
+
+    mods {
+        "${project.mod_id}" {
+            sourceSet sourceSets.main
+        }
+        "${project.mod_id}_test" {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.test
+        }
+    }
+
+    runs {
+        client {
+            client()
+            loadedMods = [mods."${mod_id}"]
+
+            programArguments.addAll '--username', '"Dev###"'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        server {
+            server()
+            loadedMods = [mods."${mod_id}"]
+
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        data {
+            clientData()
+            loadedMods = [mods."${mod_id}"]
+
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+
+        configureEach {
+            logLevel = org.slf4j.event.Level.INFO
+            ideName = project.name + " - " + ideName.get()
+        }
+    }
 }
+
+
 
 sourceSets.main.resources {
     srcDir 'src/generated/resources'
@@ -57,7 +80,6 @@ repositories {
 }
 
 dependencies {
-    implementation "net.neoforged:neoforge:${neo_version}"
 
     shadow ('io.netty:netty-codec-http:4.1.82.Final') {
         transitive = false
