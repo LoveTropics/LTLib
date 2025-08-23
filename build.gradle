@@ -3,7 +3,7 @@ plugins {
     id 'idea'
     id 'java-library'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.96'
+    id 'net.neoforged.moddev' version '2.0.103'
     id 'io.github.goooler.shadow' version '8.1.8'
 }
 
@@ -22,7 +22,7 @@ neoForge {
     version = project.neo_version
 
     parchment {
-        minecraftVersion = parchment_minecraft_version
+        minecraftVersion = minecraft_version
         mappingsVersion = parchment_version
     }
 
@@ -64,12 +64,10 @@ neoForge {
 
         configureEach {
             logLevel = org.slf4j.event.Level.INFO
-            ideName = project.name + " - " + ideName.get()
+            ideName = "${project.name} - ${ideName.get()}"
         }
     }
 }
-
-
 
 sourceSets.main.resources {
     srcDir 'src/generated/resources'
@@ -80,8 +78,7 @@ repositories {
 }
 
 dependencies {
-
-    shadow ('io.netty:netty-codec-http:4.1.82.Final') {
+    shadow('io.netty:netty-codec-http:4.1.118.Final') {
         transitive = false
     }
 }
