@@ -12,9 +12,13 @@ base {
     archivesName = 'LTLib'
 }
 
-ext.buildnumber = 0
-project.buildnumber = System.getenv('BUILD_NUMBER')
-version = "${mod_version}" + (buildnumber ? ".${buildnumber}" : ".0-SNAPSHOT")
+def env = System.getenv()
+
+if (env.GITHUB_RUN_NUMBER) {
+    version = "$mod_version.${env.GITHUB_RUN_NUMBER}"
+} else {
+    version = "$mod_version.0-SNAPSHOT"
+}
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
@@ -110,9 +114,16 @@ publishing {
     }
 
     repositories {
-        if (project.hasProperty('mavendir')) {
-            maven { url mavendir }
+        if (env.MAVEN_URL) {
+            maven {
+                credentials {
+                    username env.MAVEN_USERNAME
+                    password env.MAVEN_PASSWORD
+                }
+                url env.MAVEN_URL
+            }
         } else {
+            println("Warning: no MAVEN_URL specified, publishing to mavenLocal")
             mavenLocal()
         }
     }
