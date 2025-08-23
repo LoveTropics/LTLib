@@ -187,12 +187,20 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
         return chunks;
     }
 
+    /**
+     * @deprecated Use {@link BlockBox#CODEC} (note: the format of the block positions is slightly different!)
+     */
+    @Deprecated
     public CompoundTag write(CompoundTag root) {
         root.put("min", writeBlockPos(this.min, new CompoundTag()));
         root.put("max", writeBlockPos(this.max, new CompoundTag()));
         return root;
     }
 
+    /**
+     * @deprecated Use {@link BlockBox#CODEC} (note: the format of the block positions is slightly different!)
+     */
+    @Deprecated
     public static BlockBox read(CompoundTag root) {
         BlockPos min = readBlockPos(root.getCompoundOrEmpty("min"));
         BlockPos max = readBlockPos(root.getCompoundOrEmpty("max"));

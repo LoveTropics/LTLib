@@ -14,6 +14,7 @@ import it.unimi.dsi.fastutil.objects.Object2FloatOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.alchemy.Potion;
@@ -87,12 +88,12 @@ public final class MoreCodecs {
         return listToArray(listOrUnit(codec), factory);
     }
 
+    /**
+     * @deprecated Use {@link ExtraCodecs#compactListCodec(Codec)}
+     */
+    @Deprecated
     public static <T> Codec<List<T>> listOrUnit(Codec<T> codec) {
-        return Codec.either(codec.listOf(), codec)
-                .xmap(
-                        either -> either.map(Function.identity(), List::of),
-                        list -> list.size() == 1 ? Either.right(list.get(0)) : Either.left(list)
-                );
+        return ExtraCodecs.compactListCodec(codec);
     }
 
     public static <T> Codec<T[]> listToArray(Codec<List<T>> codec, IntFunction<T[]> factory) {
@@ -177,10 +178,11 @@ public final class MoreCodecs {
             instantCodec(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
     );
 
+    /**
+     * @deprecated Use {@link Codec#withAlternative(Codec, Codec)}
+     */
+    @Deprecated
     public static <T> Codec<T> tryFirst(Codec<T> first, Codec<T> second) {
-        return Codec.either(first, second).xmap(
-                either -> either.map(Function.identity(), Function.identity()),
-                Either::right
-        );
+        return Codec.withAlternative(first, second);
     }
 }
