@@ -165,6 +165,10 @@ public final class MoreCodecs {
         );
     }
 
+    /**
+     * @deprecated Use {@link ExtraCodecs#INSTANT_ISO8601}
+     */
+    @Deprecated
     public static Codec<Instant> instantCodec(DateTimeFormatter formatter) {
         return MoreCodecs.localDateTime(formatter).xmap(
                 localTime -> localTime.atOffset(ZoneOffset.UTC).toInstant(),
@@ -172,6 +176,10 @@ public final class MoreCodecs {
         );
     }
 
+    /**
+     * @deprecated Use {@link ExtraCodecs#INSTANT_ISO8601}
+     */
+    @Deprecated
     public static final Codec<Instant> TIME_CODEC = Codec.withAlternative(
             instantCodec(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")),
             // Why can we receive this one too? No idea! But we get it now
