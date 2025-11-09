@@ -3,8 +3,6 @@ package com.lovetropics.lib.entity;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import net.minecraft.world.item.DyeColor;
@@ -15,7 +13,6 @@ import net.minecraft.world.item.component.Fireworks;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
-import javax.annotation.Nonnull;
 import java.util.List;
 
 public final class FireworkPalette {
@@ -68,11 +65,11 @@ public final class FireworkPalette {
 		return this.palette;
 	}
 
-	public @Nonnull FireworkRocketEntity create(@Nonnull Level level) {
+	public FireworkRocketEntity create(Level level) {
 		return this.create(level, BlockPos.ZERO);
 	}
 
-	public @Nonnull FireworkRocketEntity create(@Nonnull Level level, @Nonnull BlockPos pos) {
+	public FireworkRocketEntity create(Level level, BlockPos pos) {
 		ItemStack firework = new ItemStack(Items.FIREWORK_ROCKET);
 
 		int[] colors;
@@ -103,11 +100,11 @@ public final class FireworkPalette {
 		return new FireworkRocketEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, firework);
 	}
 
-	public void spawn(@Nonnull BlockPos block, Level level) {
+	public void spawn(BlockPos block, Level level) {
 		this.spawn(block, level, 0);
 	}
 
-	public void spawn(@Nonnull BlockPos pos, Level level, int range) {
+	public void spawn(BlockPos pos, Level level, int range) {
 		BlockPos spawnPos = pos;
 
 		// don't bother if there's no randomness at all

@@ -1,6 +1,5 @@
 package com.lovetropics.lib.permission.role;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Iterator;
@@ -15,7 +14,6 @@ public interface RoleProvider extends Iterable<Role> {
             return null;
         }
 
-        @Nonnull
         @Override
         public Iterator<Role> iterator() {
             return Collections.emptyIterator();

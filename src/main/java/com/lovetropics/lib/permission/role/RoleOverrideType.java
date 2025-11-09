@@ -13,7 +13,9 @@ public final class RoleOverrideType<T> {
     private final String id;
     private final Codec<T> codec;
     private RoleOverrideBuilder<T> builder = RoleOverrideBuilder.first();
+    @Nullable
     private RoleListener initializeListener;
+    @Nullable
     private RoleListener changeListener;
 
     private RoleOverrideType(String id, Codec<T> codec) {
@@ -50,6 +52,7 @@ public final class RoleOverrideType<T> {
         return this.codec;
     }
 
+    @Nullable
     public T build(List<T> overrides) {
         return builder.apply(overrides);
     }

@@ -21,6 +21,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.slf4j.Logger;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -46,6 +47,7 @@ public final class BackendWebSocketConnection extends SimpleChannelInboundHandle
 	private final ConcurrentLinkedQueue<String> writeQueue = new ConcurrentLinkedQueue<>();
 	private final AtomicBoolean scheduledWrite = new AtomicBoolean(false);
 
+    @Nullable
 	private Channel channel;
 
 	private BackendWebSocketConnection(Handler handler) {
@@ -126,7 +128,12 @@ public final class BackendWebSocketConnection extends SimpleChannelInboundHandle
 	}
 
 	public void ping() {
-		EVENT_LOOP_GROUP.execute(() -> this.channel.writeAndFlush(new PingWebSocketFrame()));
+		EVENT_LOOP_GROUP.execute(() -> {
+            Channel channel = this.channel;
+            if (channel != null) {
+                channel.writeAndFlush(new PingWebSocketFrame());
+            }
+        });
 	}
 
 	@Override
@@ -147,6 +154,9 @@ public final class BackendWebSocketConnection extends SimpleChannelInboundHandle
 		ConcurrentLinkedQueue<String> writeQueue = this.writeQueue;
 		if (!writeQueue.isEmpty()) {
 			Channel channel = this.channel;
+            if (channel == null) {
+                return;
+            }
 
 			String message;
 			while ((message = writeQueue.poll()) != null) {
