@@ -4,10 +4,13 @@ import com.google.gson.JsonObject;
 
 import javax.annotation.Nullable;
 
-public interface BackendConnection {
+public interface BackendConnection extends AutoCloseable {
 	boolean send(JsonObject payload);
 
 	boolean isConnected();
+
+	@Override
+	void close();
 
 	interface Handler {
 		void acceptOpened();

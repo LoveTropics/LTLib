@@ -22,7 +22,6 @@ import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.slf4j.Logger;
 
 import javax.net.ssl.SSLException;
-import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -53,8 +52,8 @@ public final class BackendWebSocketConnection extends SimpleChannelInboundHandle
 		this.handler = handler;
 	}
 
-	public static CompletableFuture<BackendWebSocketConnection> connect(URI address, Handler handler) {
-		String protocol = address.getScheme();
+	public static CompletableFuture<BackendWebSocketConnection> connect(BackendConnectionConfig config, Handler handler) {
+		String protocol = config.uri().getScheme();
 		if (!protocol.equals("ws") && !protocol.equals("wss")) {
 			throw new IllegalArgumentException("Backend connection requires ws or wss protocol!");
 		}
@@ -73,7 +72,10 @@ public final class BackendWebSocketConnection extends SimpleChannelInboundHandle
 			ssl = null;
 		}
 
-		WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory.newHandshaker(address, WebSocketVersion.V13, null, false, headers, MAX_FRAME_SIZE);
+		String host = config.uri().getHost();
+		int port = config.uri().getPort();
+
+		WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory.newHandshaker(config.decoratedUri(), WebSocketVersion.V13, null, false, headers, MAX_FRAME_SIZE);
 		WebSocketClientProtocolHandler websocket = new WebSocketClientProtocolHandler(handshaker);
 
 		Bootstrap bootstrap = new Bootstrap();
@@ -85,7 +87,7 @@ public final class BackendWebSocketConnection extends SimpleChannelInboundHandle
 				channel.pipeline()
 						.addLast(new WriteTimeoutHandler(TIMEOUT_SECONDS));
 				if (ssl != null) {
-					channel.pipeline().addLast(ssl.newHandler(channel.alloc(), address.getHost(), address.getPort()));
+					channel.pipeline().addLast(ssl.newHandler(channel.alloc(), host, port));
 				}
 				channel.pipeline().addLast(new HttpClientCodec())
 						.addLast(new HttpObjectAggregator(MAX_FRAME_SIZE))
@@ -95,7 +97,7 @@ public final class BackendWebSocketConnection extends SimpleChannelInboundHandle
 			}
 		});
 
-		CompletableFuture<Channel> future = awaitFuture(bootstrap.connect(address.getHost(), address.getPort()));
+		CompletableFuture<Channel> future = awaitFuture(bootstrap.connect(host, port));
 
 		future.handle((connected, error) -> {
 			if (connected != null) {
@@ -203,5 +205,14 @@ public final class BackendWebSocketConnection extends SimpleChannelInboundHandle
 	@Override
 	public boolean isConnected() {
 		return this.channel != null;
+	}
+
+	@Override
+	public void close() {
+		Channel channel = this.channel;
+		this.channel = null;
+		if (channel != null) {
+			channel.close();
+		}
 	}
 }

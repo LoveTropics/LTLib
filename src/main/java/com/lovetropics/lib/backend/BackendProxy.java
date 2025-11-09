@@ -1,99 +1,122 @@
 package com.lovetropics.lib.backend;
 
 import com.google.gson.JsonObject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
-import java.net.URI;
-import java.util.function.Supplier;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Objects;
 
 public final class BackendProxy implements BackendConnection {
-	private static final Logger LOGGER = LogManager.getLogger(BackendProxy.class);
-	private static final long BASE_RECONNECT_INTERVAL_MS = 10 * 1000;
-	private static final long MAX_RECONNECT_INTERVAL_MS = 5 * 60 * 1000;
-	private static final long PING_INTERVAL_MS = 2 * 1000;
+	private static final Logger LOGGER = LogUtils.getLogger();
+	private static final Duration BASE_RECONNECT_INTERVAL = Duration.ofSeconds(10);
+	private static final Duration MAX_RECONNECT_INTERVAL = Duration.ofMinutes(5);
+	private static final Duration PING_INTERVAL = Duration.ofSeconds(2);
 
-	private final Supplier<URI> address;
+	@Nullable
+	private BackendConnectionConfig connectionConfig;
 	private final Handler receiver;
 
+	@Nullable
 	private volatile BackendWebSocketConnection connection;
 	private volatile boolean connecting;
 
-	private long lastConnectTime;
-	private long lastPingTime;
+	private Instant lastConnectTime = Instant.EPOCH;
+	private Instant lastPingTime = Instant.EPOCH;
 
-	private long reconnectIntervalMs = BASE_RECONNECT_INTERVAL_MS;
+	private Duration reconnectInterval = BASE_RECONNECT_INTERVAL;
 
-	public BackendProxy(Supplier<URI> address, BackendConnection.Handler handler) {
-		this.address = address;
-		this.receiver = new Handler(handler);
-		this.initiateConnection();
+	public BackendProxy(BackendConnection.Handler handler) {
+		receiver = new Handler(handler);
+	}
+
+	public void connectWith(@Nullable BackendConnectionConfig config) {
+		if (Objects.equals(connectionConfig, config)) {
+			return;
+		}
+
+		connectionConfig = config;
+
+		BackendWebSocketConnection connection = this.connection;
+		this.connection = null;
+		if (connection != null) {
+			connection.close();
+		}
+
+		if (config != null) {
+			initiateConnection(config);
+		}
 	}
 
 	public void tick() {
-		if (this.connecting) {
+		if (connecting) {
 			return;
 		}
 
 		BackendWebSocketConnection connection = this.connection;
-		long time = System.currentTimeMillis();
+		Instant time = Instant.now();
 
 		if (connection != null) {
-			this.tickConnected(connection, time);
+			tickConnected(connection, time);
 		} else {
-			this.tickDisconnected(time);
+			tickDisconnected(time);
 		}
 	}
 
-	private void tickConnected(BackendWebSocketConnection connection, long time) {
-		if (time - this.lastPingTime > PING_INTERVAL_MS) {
-			this.lastPingTime = time;
+	private void tickConnected(BackendWebSocketConnection connection, Instant time) {
+		if (Duration.between(lastPingTime, time).compareTo(PING_INTERVAL) > 0) {
+			lastPingTime = time;
 			connection.ping();
 		}
 	}
 
-	private void tickDisconnected(long time) {
-		if (time - this.lastConnectTime > reconnectIntervalMs) {
-			this.initiateConnection();
+	private void tickDisconnected(Instant time) {
+		BackendConnectionConfig config = connectionConfig;
+		if (config == null) {
+			return;
+		}
+		if (Duration.between(lastConnectTime, time).compareTo(reconnectInterval) > 0) {
+			initiateConnection(config);
 		}
 	}
 
-	private void initiateConnection() {
-		this.lastConnectTime = System.currentTimeMillis();
+	private void initiateConnection(BackendConnectionConfig config) {
+		lastConnectTime = Instant.now();
 
-		URI address = this.address.get();
-		if (address != null) {
-			this.connecting = true;
+		connecting = true;
 
-			BackendWebSocketConnection.connect(address, this.receiver).handle((connection, throwable) -> {
-				if (connection != null) {
-					this.onConnectionOpen(connection);
-				} else {
-					this.onConnectionError(throwable);
-				}
-				return null;
-			});
-		}
+		BackendWebSocketConnection.connect(config, receiver).handle((connection, throwable) -> {
+			if (connection != null) {
+				onConnectionOpen(config, connection);
+			} else {
+				onConnectionError(config, throwable);
+			}
+			return null;
+		});
 	}
 
-	private void onConnectionOpen(BackendWebSocketConnection connection) {
-		LOGGER.info("Successfully opened backend connection to {}", this.address.get());
+	private void onConnectionOpen(BackendConnectionConfig config, BackendWebSocketConnection connection) {
+		LOGGER.info("Successfully opened backend connection to {}", config.uri());
 		this.connection = connection;
-		this.connecting = false;
-		this.reconnectIntervalMs = BASE_RECONNECT_INTERVAL_MS;
+		connecting = false;
+		reconnectInterval = BASE_RECONNECT_INTERVAL;
 	}
 
-	private void onConnectionError(Throwable throwable) {
-		LOGGER.error("Failed to open backend connection to {}", this.address.get(), throwable);
-		this.closeConnection();
-		this.reconnectIntervalMs = Math.min(this.reconnectIntervalMs * 2, MAX_RECONNECT_INTERVAL_MS);
+	private void onConnectionError(BackendConnectionConfig config, Throwable throwable) {
+		LOGGER.error("Failed to open backend connection to {}", config.uri(), throwable);
+		closeConnection();
+		reconnectInterval = reconnectInterval.multipliedBy(2);
+		if (reconnectInterval.compareTo(MAX_RECONNECT_INTERVAL) > 0) {
+			reconnectInterval = MAX_RECONNECT_INTERVAL;
+		}
 	}
 
 	private void closeConnection() {
-		this.connection = null;
-		this.connecting = false;
-		this.lastConnectTime = System.currentTimeMillis();
+		connection = null;
+		connecting = false;
+		lastConnectTime = Instant.now();
 	}
 
 	@Override
@@ -108,7 +131,16 @@ public final class BackendProxy implements BackendConnection {
 
 	@Override
 	public boolean isConnected() {
-		return this.connection != null;
+		return connection != null;
+	}
+
+	@Override
+	public void close() {
+		BackendWebSocketConnection connection = this.connection;
+		this.connection = connection;
+		if (connection != null) {
+			connection.close();
+		}
 	}
 
 	private class Handler implements BackendConnection.Handler {
@@ -120,24 +152,24 @@ public final class BackendProxy implements BackendConnection {
 
 		@Override
 		public void acceptOpened() {
-			this.delegate.acceptOpened();
+			delegate.acceptOpened();
 		}
 
 		@Override
 		public void acceptMessage(JsonObject payload) {
-			this.delegate.acceptMessage(payload);
+			delegate.acceptMessage(payload);
 		}
 
 		@Override
 		public void acceptError(Throwable cause) {
-			this.delegate.acceptError(cause);
-			BackendProxy.this.closeConnection();
+			delegate.acceptError(cause);
+			closeConnection();
 		}
 
 		@Override
 		public void acceptClosed(int code, @Nullable String reason) {
-			this.delegate.acceptClosed(code, reason);
-			BackendProxy.this.closeConnection();
+			delegate.acceptClosed(code, reason);
+			closeConnection();
 		}
 	}
 }
