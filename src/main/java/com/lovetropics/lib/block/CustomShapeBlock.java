@@ -8,9 +8,9 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class CustomShapeBlock extends Block {
-    
+
     private final VoxelShape shape;
-    
+
     public CustomShapeBlock(VoxelShape shape, Block.Properties properties) {
         super(properties);
         this.shape = shape;

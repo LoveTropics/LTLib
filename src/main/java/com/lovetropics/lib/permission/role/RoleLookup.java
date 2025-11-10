@@ -4,8 +4,6 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 
-import javax.annotation.Nonnull;
-
 public interface RoleLookup {
     RoleLookup EMPTY = new RoleLookup() {
         @Override
