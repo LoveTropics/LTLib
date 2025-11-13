@@ -4,6 +4,8 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 
+import java.util.UUID;
+
 public interface RoleLookup {
     RoleLookup EMPTY = new RoleLookup() {
         @Override
@@ -18,10 +20,14 @@ public interface RoleLookup {
     };
 
     default RoleReader byPlayer(Player player) {
-        return this.byEntity(player);
+        return byEntity(player);
     }
 
     RoleReader byEntity(Entity entity);
 
     RoleReader bySource(CommandSourceStack source);
+
+    default RoleReader byPlayerId(UUID playerId) {
+        return RoleReader.EMPTY;
+    }
 }
