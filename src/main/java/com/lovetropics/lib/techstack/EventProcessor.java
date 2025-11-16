@@ -66,7 +66,7 @@ import java.util.stream.Collectors;
         ).apply(i, EventKey::new));
 
         public String asSubscriptionKey() {
-            return crud.getSerializedName() + "_" + id;
+            return id + "." + crud.getSerializedName();
         }
     }
 
