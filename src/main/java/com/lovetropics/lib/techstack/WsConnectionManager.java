@@ -3,6 +3,7 @@ package com.lovetropics.lib.techstack;
 import com.google.gson.JsonElement;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
+import io.netty.handler.codec.http.websocketx.WebSocketHandshakeException;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
@@ -167,7 +168,12 @@ import java.util.concurrent.TimeUnit;
 
         @Override
         public void handleError(Throwable cause) {
-            LOGGER.error("An error occurred in the techstack connection", cause);
+            if (cause instanceof WebSocketHandshakeException) {
+                // The stacktrace is entirely unhelpful, and this can spam a whole lot
+                LOGGER.error("An error occurred in the techstack connection: {}", cause.toString());
+            } else {
+                LOGGER.error("An error occurred in the techstack connection", cause);
+            }
             EXECUTOR.submit(WsConnectionManager.this::onConnectionClosed);
         }
 
