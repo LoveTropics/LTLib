@@ -76,9 +76,9 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
 
     public BlockPos centerBlock() {
         return new BlockPos(
-                (this.min.getX() + this.max.getX() + 1) / 2,
-                (this.min.getY() + this.max.getY() + 1) / 2,
-                (this.min.getZ() + this.max.getZ() + 1) / 2
+                (this.min.getX() + this.max.getX()) / 2,
+                (this.min.getY() + this.max.getY()) / 2,
+                (this.min.getZ() + this.max.getZ()) / 2
         );
     }
 
