@@ -48,7 +48,7 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
     }
 
     public static BlockBox ofChunk(LevelHeightAccessor level, ChunkPos chunkPos) {
-        return ofChunk(level, chunkPos.x, chunkPos.z);
+        return ofChunk(level, chunkPos.x(), chunkPos.z());
     }
 
     public BlockBox withMin(BlockPos min) {
@@ -180,7 +180,7 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
 
         for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
             for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-                chunks.add(ChunkPos.asLong(chunkX, chunkZ));
+                chunks.add(ChunkPos.pack(chunkX, chunkZ));
             }
         }
 

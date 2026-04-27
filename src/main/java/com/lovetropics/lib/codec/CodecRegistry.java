@@ -6,7 +6,7 @@ import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -26,8 +26,8 @@ public final class CodecRegistry<K, V> implements Codec<V>, Iterable<V> {
         return new CodecRegistry<>(Codec.STRING);
     }
 
-    public static <V> CodecRegistry<ResourceLocation, V> resourceLocationKeys() {
-        return new CodecRegistry<>(ResourceLocation.CODEC);
+    public static <V> CodecRegistry<Identifier, V> resourceLocationKeys() {
+        return new CodecRegistry<>(Identifier.CODEC);
     }
 
     public void clear() {
