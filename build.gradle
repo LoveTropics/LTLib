@@ -4,7 +4,6 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'net.neoforged.moddev' version '2.0.141'
-    id 'com.gradleup.shadow' version '9.4.1'
 }
 
 group = 'org.lovetropics'
@@ -77,9 +76,6 @@ repositories {
 }
 
 dependencies {
-    shadow('io.netty:netty-codec-http:4.1.118.Final') {
-        transitive = false
-    }
 }
 
 tasks.named('jar', Jar).configure {
@@ -95,8 +91,6 @@ tasks.named('jar', Jar).configure {
             "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
     }
-
-    archiveClassifier = 'slim'
 }
 
 tasks.register('sourceJar', Jar) {
@@ -105,24 +99,10 @@ tasks.register('sourceJar', Jar) {
     from sourceSets.main.java
 }
 
-configurations {
-    shadow
-    implementation.extendsFrom shadow
-}
-
-shadowJar {
-    configurations = [project.configurations.shadow]
-    archiveClassifier = ''
-
-    ['http', 'rtsp', 'spdy'].forEach {
-        relocate "io.netty.handler.codec.$it", "com.lovetropics.lib.repack.io.netty.handler.codec.$it"
-    }
-}
-
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifact shadowJar
+            artifact jar
             artifact sourceJar
         }
     }
