@@ -1,6 +1,6 @@
 package com.lovetropics.lib.permission.role;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.stream.Stream;
@@ -9,8 +9,7 @@ import java.util.stream.StreamSupport;
 public interface RoleProvider extends Iterable<Role> {
     RoleProvider EMPTY = new RoleProvider() {
         @Override
-        @Nullable
-        public Role get(String id) {
+        public @Nullable Role get(String id) {
             return null;
         }
 
@@ -20,8 +19,7 @@ public interface RoleProvider extends Iterable<Role> {
         }
     };
 
-    @Nullable
-    Role get(String id);
+    @Nullable Role get(String id);
 
     default Stream<Role> stream() {
         return StreamSupport.stream(this.spliterator(), false);

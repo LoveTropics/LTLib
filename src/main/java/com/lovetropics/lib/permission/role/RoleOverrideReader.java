@@ -2,7 +2,7 @@ package com.lovetropics.lib.permission.role;
 
 import com.lovetropics.lib.permission.PermissionResult;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -11,8 +11,7 @@ import java.util.function.Function;
 public interface RoleOverrideReader {
     RoleOverrideReader EMPTY = new RoleOverrideReader() {
         @Override
-        @Nullable
-        public <T> T getOrNull(RoleOverrideType<T> type) {
+        public <T> @Nullable T getOrNull(RoleOverrideType<T> type) {
             return null;
         }
 
@@ -32,8 +31,7 @@ public interface RoleOverrideReader {
         }
     };
 
-    @Nullable
-    <T> T getOrNull(RoleOverrideType<T> type);
+    <T> @Nullable T getOrNull(RoleOverrideType<T> type);
 
     default <T> T get(RoleOverrideType<T> type, T defaultValue) {
         return Objects.requireNonNullElse(getOrNull(type), defaultValue);

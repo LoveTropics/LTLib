@@ -4,9 +4,9 @@ import com.google.gson.JsonElement;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
 import io.netty.handler.codec.http.websocketx.WebSocketHandshakeException;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
-import javax.annotation.Nullable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;

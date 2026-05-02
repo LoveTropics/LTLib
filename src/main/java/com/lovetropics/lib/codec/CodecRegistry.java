@@ -7,9 +7,8 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import net.minecraft.resources.Identifier;
+import org.jspecify.annotations.Nullable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -38,13 +37,11 @@ public final class CodecRegistry<K, V> implements Codec<V>, Iterable<V> {
         this.map.put(key, value);
     }
 
-    @Nullable
-    public V get(K key) {
+    public @Nullable V get(K key) {
         return this.map.get(key);
     }
 
-    @Nullable
-    public K getKey(V value) {
+    public @Nullable K getKey(V value) {
         return this.map.inverse().get(value);
     }
 
@@ -78,7 +75,6 @@ public final class CodecRegistry<K, V> implements Codec<V>, Iterable<V> {
         return this.map.keySet();
     }
 
-    @Nonnull
     @Override
     public Iterator<V> iterator() {
         return this.map.values().iterator();

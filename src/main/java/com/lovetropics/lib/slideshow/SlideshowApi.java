@@ -3,7 +3,7 @@ package com.lovetropics.lib.slideshow;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.net.URI;
 
 public final class SlideshowApi {
@@ -26,8 +26,7 @@ public final class SlideshowApi {
         SlideshowApi.slideshowManager = slideshowManager;
     }
 
-    @Nullable
-    public static SlideshowInstanceHandle open(Identifier id) {
+    public @Nullable static SlideshowInstanceHandle open(Identifier id) {
         return slideshowManager.open(id);
     }
 
@@ -39,8 +38,7 @@ public final class SlideshowApi {
         slideshowManager.replacePlayer(oldPlayer, newPlayer);
     }
 
-    @Nullable
-    public static Identifier importSimpleVideo(Identifier id, URI url, double duration) {
+    public static @Nullable Identifier importSimpleVideo(Identifier id, URI url, double duration) {
         return slideshowManager.importSimpleVideo(id, url, duration);
     }
 }

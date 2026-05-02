@@ -4,7 +4,7 @@ import com.lovetropics.lib.codec.CodecRegistry;
 import com.mojang.serialization.Codec;
 import net.minecraft.server.level.ServerPlayer;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.util.List;
 
 public final class RoleOverrideType<T> {
@@ -13,10 +13,8 @@ public final class RoleOverrideType<T> {
     private final String id;
     private final Codec<T> codec;
     private RoleOverrideBuilder<T> builder = RoleOverrideBuilder.first();
-    @Nullable
-    private RoleListener initializeListener;
-    @Nullable
-    private RoleListener changeListener;
+    private @Nullable RoleListener initializeListener;
+    private @Nullable RoleListener changeListener;
 
     private RoleOverrideType(String id, Codec<T> codec) {
         this.id = id;
@@ -52,8 +50,7 @@ public final class RoleOverrideType<T> {
         return this.codec;
     }
 
-    @Nullable
-    public T build(List<T> overrides) {
+    public @Nullable T build(List<T> overrides) {
         return builder.apply(overrides);
     }
 
@@ -69,8 +66,7 @@ public final class RoleOverrideType<T> {
         }
     }
 
-    @Nullable
-    public static RoleOverrideType<?> byId(String id) {
+    public static @Nullable RoleOverrideType<?> byId(String id) {
         return REGISTRY.get(id);
     }
 

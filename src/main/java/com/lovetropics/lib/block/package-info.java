@@ -1,4 +1,3 @@
-@ParametersAreNonnullByDefault
+@org.jspecify.annotations.NullMarked
 package com.lovetropics.lib.block;
 
-import javax.annotation.ParametersAreNonnullByDefault;

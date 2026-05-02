@@ -4,9 +4,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
-import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.function.Consumer;
 

@@ -17,7 +17,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.util.Iterator;
 
 public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos> {
@@ -137,8 +137,7 @@ public record BlockBox(BlockPos min, BlockPos max) implements Iterable<BlockPos>
                 && this.max.getZ() >= other.min.getZ() && this.min.getZ() <= other.max.getZ();
     }
 
-    @Nullable
-    public BlockBox intersection(BlockBox other) {
+    public @Nullable BlockBox intersection(BlockBox other) {
         BlockPos min = BlockPos.max(this.min, other.min);
         BlockPos max = BlockPos.min(this.max, other.max);
         if (min.getX() >= max.getX() || min.getY() >= max.getY() || min.getZ() >= max.getZ()) {

@@ -4,7 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.StringRepresentable;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
@@ -37,8 +37,7 @@ public enum PermissionResult implements StringRepresentable {
         return this == DENY;
     }
 
-    @Nullable
-    public static PermissionResult byKey(String key) {
+    public static @Nullable PermissionResult byKey(String key) {
         return CODEC.byName(key);
     }
 

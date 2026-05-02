@@ -32,9 +32,9 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import net.minecraft.util.LenientJsonParser;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
-import javax.annotation.Nullable;
 import javax.net.ssl.SSLException;
 import java.net.URI;
 import java.time.Duration;

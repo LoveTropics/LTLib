@@ -1,4 +1,2 @@
-@ParametersAreNonnullByDefault
+@org.jspecify.annotations.NullMarked
 package com.lovetropics.lib.techstack;
-
-import javax.annotation.ParametersAreNonnullByDefault;
