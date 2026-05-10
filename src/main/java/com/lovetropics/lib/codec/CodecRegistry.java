@@ -7,6 +7,8 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.ExtraCodecs;
+import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Iterator;
@@ -25,7 +27,15 @@ public final class CodecRegistry<K, V> implements Codec<V>, Iterable<V> {
         return new CodecRegistry<>(Codec.STRING);
     }
 
+    /**
+     * @deprecated Use {@link CodecRegistry#idKeys()}
+     */
+    @Deprecated
     public static <V> CodecRegistry<Identifier, V> resourceLocationKeys() {
+        return CodecRegistry.idKeys();
+    }
+
+    public static <V> CodecRegistry<Identifier, V> idKeys() {
         return new CodecRegistry<>(Identifier.CODEC);
     }
 
