@@ -13,10 +13,13 @@ import it.unimi.dsi.fastutil.objects.Object2FloatMap;
 import it.unimi.dsi.fastutil.objects.Object2FloatOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.SharedConstants;
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -39,8 +42,20 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 
 public final class MoreCodecs {
+    /**
+     * @deprecated Use {@link ItemStackTemplate#CODEC} or {@link MoreCodecs#SINGLE_STACK_TEMPLATE}
+     */
+    @Deprecated
     public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, BuiltInRegistries.ITEM.byNameCodec())
             .xmap(either -> either.map(Function.identity(), ItemStack::new), Either::left);
+
+    public static final MapCodec<ItemStackTemplate> SINGLE_STACK_TEMPLATE_MAP_CODEC =  RecordCodecBuilder.mapCodec(i -> i.group(
+            Item.CODEC.fieldOf("id").forGetter(ItemStackTemplate::item),
+            DataComponentPatch.CODEC.optionalFieldOf("components", DataComponentPatch.EMPTY).forGetter(ItemStackTemplate::components)
+    ).apply(i, ItemStackTemplate::new));
+
+
+    public static final Codec<ItemStackTemplate> SINGLE_STACK_TEMPLATE = Codec.withAlternative(SINGLE_STACK_TEMPLATE_MAP_CODEC.codec(), Item.CODEC, item -> new ItemStackTemplate(item.value()));
 
     public static final Codec<BlockState> BLOCK_STATE = Codec.either(BlockState.CODEC, BuiltInRegistries.BLOCK.byNameCodec())
             .xmap(either -> either.map(Function.identity(), Block::defaultBlockState), Either::left);
