@@ -42,12 +42,6 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 
 public final class MoreCodecs {
-    /**
-     * @deprecated Use {@link ItemStackTemplate#CODEC} or {@link MoreCodecs#SINGLE_STACK_TEMPLATE}
-     */
-    @Deprecated
-    public static final Codec<ItemStack> ITEM_STACK = Codec.either(ItemStack.CODEC, BuiltInRegistries.ITEM.byNameCodec())
-            .xmap(either -> either.map(Function.identity(), ItemStack::new), Either::left);
 
     public static final MapCodec<ItemStackTemplate> SINGLE_STACK_TEMPLATE_MAP_CODEC =  RecordCodecBuilder.mapCodec(i -> i.group(
             Item.CODEC.fieldOf("id").forGetter(ItemStackTemplate::item),
@@ -55,6 +49,9 @@ public final class MoreCodecs {
     ).apply(i, ItemStackTemplate::new));
 
 
+    /**
+     * ItemStackTemplate that only allows the stack size to be one
+    * */
     public static final Codec<ItemStackTemplate> SINGLE_STACK_TEMPLATE = Codec.withAlternative(SINGLE_STACK_TEMPLATE_MAP_CODEC.codec(), Item.CODEC, item -> new ItemStackTemplate(item.value()));
 
     public static final Codec<BlockState> BLOCK_STATE = Codec.either(BlockState.CODEC, BuiltInRegistries.BLOCK.byNameCodec())
@@ -100,15 +97,7 @@ public final class MoreCodecs {
     }
 
     public static <T> Codec<T[]> arrayOrUnit(Codec<T> codec, IntFunction<T[]> factory) {
-        return listToArray(listOrUnit(codec), factory);
-    }
-
-    /**
-     * @deprecated Use {@link ExtraCodecs#compactListCodec(Codec)}
-     */
-    @Deprecated
-    public static <T> Codec<List<T>> listOrUnit(Codec<T> codec) {
-        return ExtraCodecs.compactListCodec(codec);
+        return listToArray(ExtraCodecs.compactListCodec(codec), factory);
     }
 
     public static <T> Codec<T[]> listToArray(Codec<List<T>> codec, IntFunction<T[]> factory) {
@@ -178,34 +167,5 @@ public final class MoreCodecs {
                 },
                 formatter::format
         );
-    }
-
-    /**
-     * @deprecated Use {@link ExtraCodecs#INSTANT_ISO8601}
-     */
-    @Deprecated
-    public static Codec<Instant> instantCodec(DateTimeFormatter formatter) {
-        return MoreCodecs.localDateTime(formatter).xmap(
-                localTime -> localTime.atOffset(ZoneOffset.UTC).toInstant(),
-                instant -> instant.atOffset(ZoneOffset.UTC).toLocalDateTime()
-        );
-    }
-
-    /**
-     * @deprecated Use {@link ExtraCodecs#INSTANT_ISO8601}
-     */
-    @Deprecated
-    public static final Codec<Instant> TIME_CODEC = Codec.withAlternative(
-            instantCodec(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")),
-            // Why can we receive this one too? No idea! But we get it now
-            instantCodec(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-    );
-
-    /**
-     * @deprecated Use {@link Codec#withAlternative(Codec, Codec)}
-     */
-    @Deprecated
-    public static <T> Codec<T> tryFirst(Codec<T> first, Codec<T> second) {
-        return Codec.withAlternative(first, second);
     }
 }

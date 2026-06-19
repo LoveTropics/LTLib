@@ -27,14 +27,6 @@ public final class CodecRegistry<K, V> implements Codec<V>, Iterable<V> {
         return new CodecRegistry<>(Codec.STRING);
     }
 
-    /**
-     * @deprecated Use {@link CodecRegistry#idKeys()}
-     */
-    @Deprecated
-    public static <V> CodecRegistry<Identifier, V> resourceLocationKeys() {
-        return CodecRegistry.idKeys();
-    }
-
     public static <V> CodecRegistry<Identifier, V> idKeys() {
         return new CodecRegistry<>(Identifier.CODEC);
     }
