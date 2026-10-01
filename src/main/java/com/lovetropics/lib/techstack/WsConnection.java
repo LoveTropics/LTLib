@@ -40,6 +40,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -69,8 +70,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
     public static CompletableFuture<WsConnection> connect(URI uri, Handler handler) {
         WsConnection connection = new WsConnection(handler);
         try {
-            return connection.connect(uri).thenApply(_ -> connection);
+            return connection.connect(uri).handle((_, throwable) -> {
+                if (throwable != null) {
+                    connection.close();
+                    throw new CompletionException(throwable);
+                }
+                return connection;
+            });
         } catch (Exception e) {
+            connection.close();
             return CompletableFuture.failedFuture(e);
         }
     }
