@@ -67,12 +67,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
     }
 
     public static CompletableFuture<WsConnection> connect(URI uri, Handler handler) {
+        WsConnection connection = new WsConnection(handler);
+        try {
+            return connection.connect(uri).thenApply(_ -> connection);
+        } catch (Exception e) {
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    private CompletableFuture<?> connect(URI uri) {
         String protocol = uri.getScheme();
         if (!ALLOWED_PROTOCOLS.contains(protocol)) {
             throw new IllegalArgumentException("Backend connection requires ws or wss protocol!");
         }
-
-        WsConnection connection = new WsConnection(handler);
 
         HttpHeaders headers = new DefaultHttpHeaders();
         SslContext sslContext = protocol.equals("wss") ? buildSslContext() : null;
@@ -97,14 +104,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
                         .addLast(new HttpObjectAggregator(MAX_FRAME_SIZE))
                         .addLast(WebSocketClientCompressionHandler.INSTANCE)
                         .addLast(websocket)
-                        .addLast(connection);
+                        .addLast(this);
             }
         });
 
-        return awaitFuture(bootstrap.connect(host, port)).thenApply(channel -> {
-            connection.channel = channel;
-            return connection;
-        });
+        return awaitFuture(bootstrap.connect(host, port))
+                .thenAccept(channel -> this.channel = channel);
     }
 
     private static SslContext buildSslContext() {
