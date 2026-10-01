@@ -18,7 +18,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.level.block.Block;
@@ -26,9 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvider;
 import net.minecraft.world.phys.Vec3;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -48,10 +45,7 @@ public final class MoreCodecs {
             DataComponentPatch.CODEC.optionalFieldOf("components", DataComponentPatch.EMPTY).forGetter(ItemStackTemplate::components)
     ).apply(i, ItemStackTemplate::new));
 
-
-    /**
-     * ItemStackTemplate that only allows the stack size to be one
-    * */
+    /// [ItemStackTemplate] that only allows the stack size to be one
     public static final Codec<ItemStackTemplate> SINGLE_STACK_TEMPLATE = Codec.withAlternative(SINGLE_STACK_TEMPLATE_MAP_CODEC.codec(), Item.CODEC, item -> new ItemStackTemplate(item.value()));
 
     public static final Codec<BlockState> BLOCK_STATE = Codec.either(BlockState.CODEC, BuiltInRegistries.BLOCK.byNameCodec())
@@ -89,11 +83,10 @@ public final class MoreCodecs {
                 }
             }, DataResult::success), Either::right);
 
+    /// @deprecated Use [ExtraCodecs#optionalAlwaysPresentFieldOf(Codec, String, Object) ]
+    @Deprecated
     public static <T> MapCodec<T> inputOptionalFieldOf(Codec<T> codec, String name, T fallback) {
-        return Codec.optionalField(name, codec, false).xmap(
-                o -> o.orElse(fallback),
-                Optional::of
-        );
+        return ExtraCodecs.optionalAlwaysPresentFieldOf(codec, name, fallback);
     }
 
     public static <T> Codec<T[]> arrayOrUnit(Codec<T> codec, IntFunction<T[]> factory) {
