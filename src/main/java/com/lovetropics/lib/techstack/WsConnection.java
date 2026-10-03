@@ -112,7 +112,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
                         .addLast(new HttpObjectAggregator(MAX_FRAME_SIZE))
                         .addLast(WebSocketClientCompressionHandler.INSTANCE)
                         .addLast(websocket)
-                        .addLast(this);
+                        .addLast(WsConnection.this);
             }
         });
 
