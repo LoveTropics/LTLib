@@ -15,7 +15,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
 
-public final class FireworkPalette {
+public record FireworkPalette(int[]... palette) {
     private static final RandomSource RANDOM = RandomSource.create();
 
     static final int CE_YELLOW = 0xF4C434;
@@ -49,20 +49,17 @@ public final class FireworkPalette {
             new int[]{0xffb85c, 0xffb85c, 0x5fbfa2, 0xc0f3ed, 0xfffff}
     );
 
-    private final int[][] palette;
+    public static final FireworkPalette SEACOLGY = new FireworkPalette(
+            new int[]{0xF4C434, 0x001936, 0x117A8B, 0x20B2AA, 0x4A90E2, 0xF58220},
+            new int[]{0xE2583E, 0x00B7EB, 0xF5F5DC, 0x1E4620, 0xE6ECEF, 0x00A86B}
+    );
 
-    public FireworkPalette(int[]... palette) {
-        this.palette = palette;
-    }
+    public static final FireworkPalette CURRENT_PALETTE = SEACOLGY;
 
     public static FireworkPalette forDye(DyeColor color) {
         return new FireworkPalette(
                 new int[]{color.getFireworkColor(), color.getTextColor(), color.getTextureDiffuseColor()}
         );
-    }
-
-    public int[][] getPalette() {
-        return this.palette;
     }
 
     public FireworkRocketEntity create(Level level) {
