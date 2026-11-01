@@ -7,17 +7,16 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.ExtraCodecs;
-import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
 public final class CodecRegistry<K, V> implements Codec<V>, Iterable<V> {
     private final Codec<K> keyCodec;
-    private final BiMap<K, V> map = HashBiMap.create();
+    private BiMap<K, V> map = HashBiMap.create();
 
     private CodecRegistry(Codec<K> keyCodec) {
         this.keyCodec = keyCodec;
@@ -37,6 +36,10 @@ public final class CodecRegistry<K, V> implements Codec<V>, Iterable<V> {
 
     public void register(K key, V value) {
         this.map.put(key, value);
+    }
+
+    public void setAll(Map<K, V> map) {
+        this.map = HashBiMap.create(map);
     }
 
     public @Nullable V get(K key) {
