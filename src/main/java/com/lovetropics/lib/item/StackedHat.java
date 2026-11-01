@@ -5,9 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.Util;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
@@ -49,20 +47,20 @@ public record StackedHat(
         return access.get(item);
     }
 
-    public static List<StackedHat> getPlayersHats(Player player) {
-        return access.getPlayersHats(player);
+    public static List<StackedHat> getEntityHats(Entity entity) {
+        return access.getEntityHats(entity);
     }
 
-    public static void setPlayersHats(Player player, List<StackedHat> hats) {
-        access.setPlayersHats(player, hats);
+    public static void setEntityHats(Entity entity, List<StackedHat> hats) {
+        access.setEntityHats(entity, hats);
     }
 
-    public static void addHatToPlayer(Player player, StackedHat hat) {
-        access.addHatToPlayer(player, hat);
+    public static void addHatToEntity(Entity entity, StackedHat hat) {
+        access.addHatToEntity(entity, hat);
     }
 
-    public static void removeHatFromPlayer(Player player, StackedHat hat) {
-        access.removeHatFromPlayer(player, hat);
+    public static void removeHatFromEntity(Entity entity, StackedHat hat) {
+        access.removeHatFromEntity(entity, hat);
     }
 
     public static void bindAccess(Access access) {
@@ -86,22 +84,21 @@ public record StackedHat(
             }
 
             @Override
-            public List<StackedHat> getPlayersHats(Player player) {
+            public List<StackedHat> getEntityHats(Entity entity) {
                 return List.of();
             }
 
             @Override
-            public void setPlayersHats(Player player, List<StackedHat> hats) {
+            public void setEntityHats(Entity entity, List<StackedHat> hats) {
             }
 
             @Override
-            public void addHatToPlayer(Player player, StackedHat hat) {
+            public void addHatToEntity(Entity entity, StackedHat hat) {
             }
 
             @Override
-            public void removeHatFromPlayer(Player player, StackedHat hat) {
+            public void removeHatFromEntity(Entity entity, StackedHat hat) {
             }
-
         };
 
         ItemStack create(List<StackedHat> hats);
@@ -110,13 +107,12 @@ public record StackedHat(
 
         List<StackedHat> get(ItemStack item);
 
-        List<StackedHat> getPlayersHats(Player serverPlayer);
+        List<StackedHat> getEntityHats(Entity entity);
 
-        void setPlayersHats(Player serverPlayer, List<StackedHat> hats);
+        void setEntityHats(Entity entity, List<StackedHat> hats);
 
-        void addHatToPlayer(Player player, StackedHat hat);
+        void addHatToEntity(Entity entity, StackedHat hat);
 
-        void removeHatFromPlayer(Player player, StackedHat hat);
-
+        void removeHatFromEntity(Entity entity, StackedHat hat);
     }
 }
